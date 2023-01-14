@@ -18,6 +18,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
+var import_register = require("source-map-support/register");
 class ElgatoKeyLight extends utils.Adapter {
   constructor(options = {}) {
     super({
@@ -26,44 +27,99 @@ class ElgatoKeyLight extends utils.Adapter {
     });
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
+    this.on("message", this.onMessage.bind(this));
     this.on("unload", this.onUnload.bind(this));
+    this.requestTimer = null;
+    this.messageHandlerTimer = null;
+    this.subscribedStates = [];
+    this.messageHandler = [];
   }
   async onReady() {
+    this.messageHandler = [];
     this.setState("info.connection", false, true);
-    this.log.info("config option1: " + this.config.option1);
-    this.log.info("config option2: " + this.config.option2);
-    await this.setObjectNotExistsAsync("testVariable", {
-      type: "state",
-      common: {
-        name: "testVariable",
-        type: "boolean",
-        role: "indicator",
-        read: true,
-        write: true
-      },
-      native: {}
-    });
-    this.subscribeStates("testVariable");
-    await this.setStateAsync("testVariable", true);
-    await this.setStateAsync("testVariable", { val: true, ack: true });
-    await this.setStateAsync("testVariable", { val: true, ack: true, expire: 30 });
-    let result = await this.checkPasswordAsync("admin", "iobroker");
-    this.log.info("check user admin pw iobroker: " + result);
-    result = await this.checkGroupAsync("admin", "admin");
-    this.log.info("check group user admin group admin: " + result);
   }
-  onUnload(callback) {
+  writeLog(logText, logType) {
+    if (logType === "warn" || logType === "error") {
+      if (this.messageHandler.length > 0) {
+        if (!this.messageHandler.find((message) => message.message === logText)) {
+          this.messageHandler.push({
+            severity: logType,
+            clearTimer: false,
+            message: logText
+          });
+          if (logType === "warn")
+            this.log.warn(logText);
+          if (logType === "error")
+            this.log.error(logText);
+          this.log.debug(
+            `[Adapter v.${this.version} writeLog] messageHandler: ` + JSON.stringify(this.messageHandler)
+          );
+        } else {
+          if (!this.messageHandler.find((message) => message.message === logText).clearTimer) {
+            this.messageHandler.find((message) => message.message === logText).clearTimer = true;
+            this.messageHandlerTimer = this.setTimeout(() => {
+              this.messageHandler.find((message) => message.message === logText).clearTimer = false;
+              this.messageHandler = this.messageHandler.filter((message) => message.message !== logText);
+              this.log.debug(`[Adapter v.${this.version} writeLog] clear messageHandler for ${logText}`);
+            }, 3e5);
+          }
+          this.log.debug(
+            `[Adapter v.${this.version} writeLog] messageHandler: ` + JSON.stringify(this.messageHandler)
+          );
+        }
+      } else {
+        this.messageHandler.push({
+          severity: logType,
+          clearTimer: false,
+          message: logText
+        });
+        if (logType === "warn")
+          this.log.warn(logText);
+        if (logType === "error")
+          this.log.error(logText);
+        this.log.debug(
+          `[Adapter v.${this.version} writeLog] messageHandler: ` + JSON.stringify(this.messageHandler)
+        );
+      }
+    } else {
+      if (logType === "silly")
+        this.log.silly(logText);
+      if (logType === "info")
+        this.log.info(logText);
+      if (logType === "debug")
+        this.log.debug(logText);
+    }
+  }
+  async onMessage(obj) {
+    if (typeof obj === "object" && obj.message) {
+      if (obj.command === "send") {
+        this.log.info("send command");
+        if (obj.callback)
+          this.sendTo(obj.from, obj.command, "Message received", obj.callback);
+      }
+    }
+  }
+  async onStateChange(id, state) {
+    if (state) {
+      if (state.from === "system.adapter." + this.namespace) {
+        return;
+      } else {
+        this.log.debug(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+      }
+    } else {
+      return;
+    }
+  }
+  async onUnload(callback) {
     try {
+      if (this.requestTimer)
+        this.clearTimeout(this.requestTimer);
+      if (this.messageHandlerTimer)
+        this.clearTimeout(this.messageHandlerTimer);
+      this.setState("info.connection", false, true);
       callback();
     } catch (e) {
       callback();
-    }
-  }
-  onStateChange(id, state) {
-    if (state) {
-      this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-    } else {
-      this.log.info(`state ${id} deleted`);
     }
   }
 }

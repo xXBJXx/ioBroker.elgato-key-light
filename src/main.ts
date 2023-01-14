@@ -1,154 +1,160 @@
-/*
- * Created with @iobroker/create-adapter v2.3.0
- */
+// hue-sync-box API https://developers.meethue.com/develop/hue-entertainment/hue-hdmi-sync-box-api/#Device%20Discovery
 
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-
 // Load your modules here, e.g.:
-// import * as fs from "fs";
+import 'source-map-support/register';
+
+// Global variables here
 
 class ElgatoKeyLight extends utils.Adapter {
-    public constructor(options: Partial<utils.AdapterOptions> = {}) {
-        super({
-            ...options,
-            name: 'elgato-key-light',
-        });
-        this.on('ready', this.onReady.bind(this));
-        this.on('stateChange', this.onStateChange.bind(this));
-        // this.on('objectChange', this.onObjectChange.bind(this));
-        // this.on('message', this.onMessage.bind(this));
-        this.on('unload', this.onUnload.bind(this));
-    }
+	private requestTimer: ioBroker.Timeout | null;
+	private subscribedStates: string[];
+	private messageHandler: any[];
+	private messageHandlerTimer: ioBroker.Timeout | null;
 
-    /**
-     * Is called when databases are connected and adapter received configuration.
-     */
-    private async onReady(): Promise<void> {
-        // Initialize your adapter here
+	public constructor(options: Partial<utils.AdapterOptions> = {}) {
+		super({
+			...options,
+			name: 'elgato-key-light',
+		});
+		this.on('ready', this.onReady.bind(this));
+		this.on('stateChange', this.onStateChange.bind(this));
+		this.on('message', this.onMessage.bind(this));
+		this.on('unload', this.onUnload.bind(this));
+		this.requestTimer = null;
+		this.messageHandlerTimer = null;
+		this.subscribedStates = [];
+		this.messageHandler = [];
+	}
 
-        // Reset the connection indicator during startup
-        this.setState('info.connection', false, true);
+	/**
+	 * Is called when databases are connected and adapter received configuration.
+	 */
+	private async onReady(): Promise<void> {
+		// Initialize your adapter here
+		this.messageHandler = [];
+		// Reset the connection indicator during startup
+		this.setState('info.connection', false, true);
+	}
 
-        // The adapters config (in the instance object everything under the attribute "native") is accessible via
-        // this.config:
-        this.log.info('config option1: ' + this.config.option1);
-        this.log.info('config option2: ' + this.config.option2);
+	/**
+	 * @description a function for log output
+	 */
+	private writeLog(logText: string, logType: 'silly' | 'info' | 'debug' | 'warn' | 'error'): void {
+		if (logType === 'warn' || logType === 'error') {
+			if (this.messageHandler.length > 0) {
+				// check if the logText is not in the messageHandler
+				if (!this.messageHandler.find((message) => message.message === logText)) {
+					// push the logText to the messageHandler
+					this.messageHandler.push({
+						severity: logType,
+						clearTimer: false,
+						message: logText,
+					});
+					if (logType === 'warn') this.log.warn(logText);
+					if (logType === 'error') this.log.error(logText);
+					this.log.debug(
+						`[Adapter v.${this.version} writeLog] messageHandler: ` + JSON.stringify(this.messageHandler),
+					);
+				} else {
+					if (!this.messageHandler.find((message) => message.message === logText).clearTimer) {
+						// set the clearTimer to true
+						this.messageHandler.find((message) => message.message === logText).clearTimer = true;
+						// set the clearTimer to false and clear the messageHandler for the logText after 5 min
+						this.messageHandlerTimer = this.setTimeout(() => {
+							this.messageHandler.find((message) => message.message === logText).clearTimer = false;
+							this.messageHandler = this.messageHandler.filter((message) => message.message !== logText);
+							this.log.debug(`[Adapter v.${this.version} writeLog] clear messageHandler for ${logText}`);
+						}, 300000);
+					}
+					this.log.debug(
+						`[Adapter v.${this.version} writeLog] messageHandler: ` + JSON.stringify(this.messageHandler),
+					);
+				}
+			} else {
+				// push the logText to the messageHandler
+				this.messageHandler.push({
+					severity: logType,
+					clearTimer: false,
+					message: logText,
+				});
+				if (logType === 'warn') this.log.warn(logText);
+				if (logType === 'error') this.log.error(logText);
+				this.log.debug(
+					`[Adapter v.${this.version} writeLog] messageHandler: ` + JSON.stringify(this.messageHandler),
+				);
+			}
+		} else {
+			if (logType === 'silly') this.log.silly(logText);
+			if (logType === 'info') this.log.info(logText);
+			if (logType === 'debug') this.log.debug(logText);
+		}
+	}
 
-        /*
-		For every state in the system there has to be also an object of type state
-		Here a simple template for a boolean variable named "testVariable"
-		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
-		*/
-        await this.setObjectNotExistsAsync('testVariable', {
-            type: 'state',
-            common: {
-                name: 'testVariable',
-                type: 'boolean',
-                role: 'indicator',
-                read: true,
-                write: true,
-            },
-            native: {},
-        });
+	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
+	// /**
+	//  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
+	//  * Using this method requires "common.messagebox" property to be set to true in io-package.json
+	//  */
+	private async onMessage(obj: ioBroker.Message): Promise<void> {
+		if (typeof obj === 'object' && obj.message) {
+			if (obj.command === 'send') {
+				// e.g. send email or pushover or whatever
+				this.log.info('send command');
 
-        // In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-        this.subscribeStates('testVariable');
-        // You can also add a subscription for multiple states. The following line watches all states starting with "lights."
-        // this.subscribeStates('lights.*');
-        // Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-        // this.subscribeStates('*');
+				// Send response in callback if required
+				if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
+			}
+		}
+	}
 
-        /*
-			setState examples
-			you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-		*/
-        // the variable testVariable is set to true as command (ack=false)
-        await this.setStateAsync('testVariable', true);
+	/**
+	 * Is called if a subscribed state changes
+	 */
+	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+		if (state) {
+			if (state.from === 'system.adapter.' + this.namespace) {
+				// ignore the state change from the adapter itself
+				return;
+			} else {
+				// The state was changed
+				this.log.debug(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+			}
+		} else {
+			return;
+		}
+	}
 
-        // same thing, but the value is flagged "ack"
-        // ack should be always set to true if the value is received from or acknowledged from the target system
-        await this.setStateAsync('testVariable', { val: true, ack: true });
+	/**
+	 * Is called when adapter shuts down - callback has to be called under any circumstances!
+	 */
+	private async onUnload(callback: () => void): Promise<void> {
+		try {
+			// Here you must clear all timeouts or intervals that may still be active
+			if (this.requestTimer) this.clearTimeout(this.requestTimer);
+			if (this.messageHandlerTimer) this.clearTimeout(this.messageHandlerTimer);
+			this.setState('info.connection', false, true);
+			// for (const devicesKey in this.config.devices) {
+			// 	this.setState(
+			// 		`box_${await replaceFunktion(this.config.devices[devicesKey].name)}.reachable`,
+			// 		false,
+			// 		true,
+			// 	);
+			// }
 
-        // same thing, but the state is deleted after 30s (getState will return null afterwards)
-        await this.setStateAsync('testVariable', { val: true, ack: true, expire: 30 });
-
-        // examples for the checkPassword/checkGroup functions
-        let result = await this.checkPasswordAsync('admin', 'iobroker');
-        this.log.info('check user admin pw iobroker: ' + result);
-
-        result = await this.checkGroupAsync('admin', 'admin');
-        this.log.info('check group user admin group admin: ' + result);
-    }
-
-    /**
-     * Is called when adapter shuts down - callback has to be called under any circumstances!
-     */
-    private onUnload(callback: () => void): void {
-        try {
-            // Here you must clear all timeouts or intervals that may still be active
-            // clearTimeout(timeout1);
-            // clearTimeout(timeout2);
-            // ...
-            // clearInterval(interval1);
-
-            callback();
-        } catch (e) {
-            callback();
-        }
-    }
-
-    // If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
-    // You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
-    // /**
-    //  * Is called if a subscribed object changes
-    //  */
-    // private onObjectChange(id: string, obj: ioBroker.Object | null | undefined): void {
-    //     if (obj) {
-    //         // The object was changed
-    //         this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-    //     } else {
-    //         // The object was deleted
-    //         this.log.info(`object ${id} deleted`);
-    //     }
-    // }
-
-    /**
-     * Is called if a subscribed state changes
-     */
-    private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
-        if (state) {
-            // The state was changed
-            this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-        } else {
-            // The state was deleted
-            this.log.info(`state ${id} deleted`);
-        }
-    }
-
-    // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-    // /**
-    //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-    //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-    //  */
-    // private onMessage(obj: ioBroker.Message): void {
-    //     if (typeof obj === 'object' && obj.message) {
-    //         if (obj.command === 'send') {
-    //             // e.g. send email or pushover or whatever
-    //             this.log.info('send command');
-
-    //             // Send response in callback if required
-    //             if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-    //         }
-    //     }
-    // }
+			callback();
+		} catch (e) {
+			callback();
+		}
+	}
 }
 
 if (require.main !== module) {
-    // Export the constructor in compact mode
-    module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new ElgatoKeyLight(options);
+	// Export the constructor in compact mode
+	module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new ElgatoKeyLight(options);
 } else {
-    // otherwise start the instance directly
-    (() => new ElgatoKeyLight())();
+	// otherwise start the instance directly
+	(() => new ElgatoKeyLight())();
 }

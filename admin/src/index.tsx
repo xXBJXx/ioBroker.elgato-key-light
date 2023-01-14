@@ -1,25 +1,70 @@
+import Utils from '@iobroker/adapter-react-v5/Components/Utils';
+import theme from '@iobroker/adapter-react-v5/Theme';
+import { ThemeProvider } from '@mui/material/styles';
+import { SettingsApp } from 'iobroker-react/app';
+import { useSettings } from 'iobroker-react/hooks';
+import type { Translations } from 'iobroker-react/i18n';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { MuiThemeProvider } from '@material-ui/core/styles';
-import theme from '@iobroker/adapter-react/Theme';
-import Utils from '@iobroker/adapter-react/Components/Utils';
-import App from './app';
+import { SettingPage } from './SettingPage';
 
-let themeName = Utils.getThemeName();
+// Components are imported here
 
-function build(): void {
-    ReactDOM.render(
-        <MuiThemeProvider theme={theme(themeName)}>
-            <App
-                adapterName="elgato-key-light"
-                onThemeChange={(_theme) => {
-                    themeName = _theme;
-                    build();
-                }}
-            />
-        </MuiThemeProvider>,
-        document.getElementById('root'),
-    );
-}
+const themeName = Utils.getThemeName();
 
-build();
+// eslint-disable-next-line react/display-name
+const SettingsPageContent: React.FC = React.memo(() => {
+	// settings is the current settings object, including the changes made in the UI
+	// originalSettings is the original settings object, as it was loaded from ioBroker
+	// setSettings is used to update the current settings object
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const { settings, originalSettings, setSettings } = useSettings<ioBroker.AdapterConfig>();
+
+	// Updates the settings when the checkbox changes. The changes are not saved yet.
+	const handleChange = <T extends keyof ioBroker.AdapterConfig>(option: T, value: ioBroker.AdapterConfig[T]) => {
+		setSettings((s) => ({
+			...s,
+			[option]: value,
+		}));
+	};
+	return (
+		<React.Fragment>
+			<SettingPage settings={settings} onChange={(option, value) => handleChange(option, value)} />
+		</React.Fragment>
+	);
+});
+
+const migrateSettings = (settings: ioBroker.AdapterConfig) => {
+	// Here's an example for editing settings after they are loaded from the backend
+	// In this case, option1 will be set to true by default
+	if (settings.devices === undefined) {
+		settings.devices = [];
+	}
+};
+
+// Load your translations
+const translations: Translations = {
+	en: require('./i18n/en.json'),
+	de: require('./i18n/de.json'),
+	ru: require('./i18n/ru.json'),
+	pt: require('./i18n/pt.json'),
+	nl: require('./i18n/nl.json'),
+	fr: require('./i18n/fr.json'),
+	it: require('./i18n/it.json'),
+	es: require('./i18n/es.json'),
+	pl: require('./i18n/pl.json'),
+	uk: require('./i18n/uk.json'),
+	'zh-cn': require('./i18n/zh-cn.json'),
+};
+
+const Root: React.FC = () => {
+	return (
+		<ThemeProvider theme={theme(themeName)}>
+			<SettingsApp name="elgato-key-light" afterLoad={migrateSettings} translations={translations}>
+				<SettingsPageContent />
+			</SettingsApp>
+		</ThemeProvider>
+	);
+};
+
+ReactDOM.render(<Root />, document.getElementById('root'));
