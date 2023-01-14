@@ -1,0 +1,102 @@
+{
+    "common": {
+        "name": "elgato-key-light",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "zh-cn": "首次出版"
+            }
+        },
+        "title": "Elgato Key Light",
+        "titleLang": {
+            "en": "Elgato Key Light",
+            "de": "Elgato Schlüssellicht",
+            "ru": "Эльгато Кей Лайт",
+            "pt": "Elgato Key Light",
+            "nl": "Elgato sleutellicht",
+            "fr": "Clé lumineuse Elgato",
+            "it": "Portachiavi Elgato",
+            "es": "Luz de llave Elgato",
+            "pl": "Kluczyk Elgato",
+            "zh-cn": "埃尔加托钥匙灯"
+        },
+        "desc": {
+            "en": "elgato-key-light",
+            "de": "elgato-schlüssellicht",
+            "ru": "Эльгато-ключ-свет",
+            "pt": "elgato-key-light",
+            "nl": "elgato-sleutellicht",
+            "fr": "elgato-key-light",
+            "it": "elgato-key-light",
+            "es": "elgato-key-light",
+            "pl": "elgato-key-light",
+            "zh-cn": "elgato键灯"
+        },
+        "authors": ["xXBJXx <issi.dev.iobroker@gmail.com>"],
+        "keywords": ["Elgato", "Light", "Elgato Key Light"],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "main": "build/main.js",
+        "icon": "elgato-key-light.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/xXBJXx/ioBroker.elgato-key-light/main/admin/elgato-key-light.png",
+        "readme": "https://github.com/xXBJXx/ioBroker.elgato-key-light/blob/main/README.md",
+        "loglevel": "info",
+        "mode": "daemon",
+        "type": "lighting",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "poll",
+        "adminUI": {
+            "config": "materialize"
+        },
+        "eraseOnUpload": true,
+        "dependencies": [
+            {
+                "js-controller": ">=3.3.22"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=5.0.0"
+            }
+        ]
+    },
+    "native": {
+        "option1": true,
+        "option2": "42"
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}
