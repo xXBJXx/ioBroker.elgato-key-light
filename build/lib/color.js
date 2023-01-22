@@ -45,10 +45,10 @@ function hsbToHex(hue, saturation, brightness) {
       r = p, g = b, b = t;
       break;
     case 3:
-      r = p, g = q, b = b;
+      r = p, g = q, b;
       break;
     case 4:
-      r = t, g = p, b = b;
+      r = t, g = p, b;
       break;
     case 5:
       r = b, g = p, b = q;
@@ -70,7 +70,6 @@ function hexToHsb(hex) {
   if (max === min) {
     h = 0;
   } else if (max === r) {
-    h = 60;
     h = 60 * (0 + (g - b) / (max - min));
   } else if (max === g) {
     h = 60 * (2 + (b - r) / (max - min));
@@ -105,10 +104,10 @@ function hsbToRgb(hue, saturation, brightness) {
       r = p, g = b, b = t;
       break;
     case 3:
-      r = p, g = q, b = b;
+      r = p, g = q, b;
       break;
     case 4:
-      r = t, g = p, b = b;
+      r = t, g = p, b;
       break;
     case 5:
       r = b, g = p, b = q;
