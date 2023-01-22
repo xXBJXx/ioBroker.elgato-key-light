@@ -55,7 +55,7 @@ After the changes of No. 2, No. 3 and No. 4 you have to click on the Refresh but
 by not restarting.
 
 ### Warning
-**Please do not access the data points too often, otherwise the devices will not be accessible for a few seconds.** ###
+**Please do not access the data points too often, otherwise the devices will not be accessible for a few seconds.**
 
 ### Data points
 The data points are created automatically when a new device is found.
@@ -64,7 +64,7 @@ The data points are created automatically when a new device is found.
 ![Adapter UI](admin/media/ObjectsMain.png)\
 The data points are divided into:
 * **info** ⇨ Information about the device\.
-  ![Adapter UI](admin/media/objects_info.png)
+  ![Adapter UI](admin/media/objects_Info.png)
 * **light** ⇨ Data points for controlling the device, here there are two different types of data points:
   * for controlling brightness and color temperature.
     ![Adapter UI](admin/media/objects_light_colorTemp.png)
