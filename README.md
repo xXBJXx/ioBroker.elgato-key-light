@@ -1,4 +1,4 @@
-![Logo](admin/elgato-key-light.webp)
+![Logo](admin/elgato-key-light.png)
 # ioBroker.elgato-key-light
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.elgato-key-light.svg)](https://www.npmjs.com/package/iobroker.elgato-key-light)
