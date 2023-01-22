@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "elgato-key-light",
-		"version": "0.0.2",
+		"version": "0.0.3",
 		"news": {
+			"0.0.3": {
+				"en": "changed all images to png",
+				"de": "alle Bilder in png geändert",
+				"ru": "изменил все изображения на png",
+				"pt": "mudou todas as imagens para png",
+				"nl": "alle afbeeldingen veranderd in png",
+				"fr": "changé toutes les images en png",
+				"it": "modificato tutte le immagini in png",
+				"es": "cambiado todas las imágenes a png",
+				"pl": "zmienił wszystkie obrazy na png",
+				"uk": "змінили всі зображення на png",
+				"zh-cn": "将所有图片改为png"
+			},
 			"0.0.2": {
 				"en": "first release",
 				"de": "erste Veröffentlichung",
