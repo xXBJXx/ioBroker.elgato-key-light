@@ -235,7 +235,7 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 			/>
 			<CardMedia
 				component="img"
-				image={`media/${item.info?.productName?.replace(/\s/g, '-').toLowerCase()}.webp`}
+				image={`media/${item.info?.productName?.replace(/\s/g, '-').toLowerCase()}.png`}
 				alt={item.info?.productName?.replace(/\s/g, '-').toLowerCase()}
 				sx={{
 					margin: '0 5 0 5',

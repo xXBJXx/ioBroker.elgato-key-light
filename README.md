@@ -85,6 +85,9 @@ The data points are divided into:
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (xXBJXx) changed all images to png
+
 ### 0.0.2 (2023-01-22)
 * (xXBJXx) first release
 
