@@ -1,3 +1,12 @@
 {
-	"add": "toevoegen"
+	"boxCard_Brightness": "Helderheid",
+	"boxCard_Color": "Kleur",
+	"boxCard_ColorTemp": "Kleurtemperatuur",
+	"boxCard_update": "Update",
+	"tab_adapterNotAlive": "De adapter is niet ingeschakeld. Zet eerst de adapter aan.",
+	"tab_devices": "apparaten",
+	"tab_interval": "interval",
+	"tab_intervalTooltip": "Hier kunt u het pollinginterval voor de adapter instellen. De standaardinstelling is 60 seconden.",
+	"tab_noDevices": "Er zijn geen apparaten gevonden",
+	"tab_saveButton": "red"
 }

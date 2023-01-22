@@ -1,3 +1,12 @@
 {
-	"add": "adicionar"
+	"boxCard_Brightness": "Luminosidade",
+	"boxCard_Color": "Cor",
+	"boxCard_ColorTemp": "Temperatura de cor",
+	"boxCard_update": "Actualização",
+	"tab_adapterNotAlive": "O adaptador não está ligado. Por favor, ligue primeiro o adaptador.",
+	"tab_devices": "dispositivos",
+	"tab_interval": "intervalo",
+	"tab_intervalTooltip": "Aqui pode definir o intervalo de sondagem para o adaptador. A definição por defeito é de 60 segundos.",
+	"tab_noDevices": "Não foram encontrados dispositivos",
+	"tab_saveButton": "excepto"
 }

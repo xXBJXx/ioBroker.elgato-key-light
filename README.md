@@ -1,4 +1,4 @@
-![Logo](admin/elgato-key-light.png)
+![Logo](admin/elgato-key-light.webp)
 # ioBroker.elgato-key-light
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.elgato-key-light.svg)](https://www.npmjs.com/package/iobroker.elgato-key-light)
@@ -6,105 +6,79 @@
 ![Number of Installations](https://iobroker.live/badges/elgato-key-light-installed.svg)
 ![Current version in stable repository](https://iobroker.live/badges/elgato-key-light-stable.svg)
 
-[![NPM](https://nodei.co/npm/iobroker.elgato-key-light.png?downloads=true)](https://nodei.co/npm/iobroker.elgato-key-light/)
-
 **Tests:** ![Test and Release](https://github.com/xXBJXx/ioBroker.elgato-key-light/workflows/Test%20and%20Release/badge.svg)
 
 ## elgato-key-light adapter for ioBroker
 
-Describe your project here
-
-## Developer manual
-This section is intended for the developer. It can be deleted later.
-
 ### DISCLAIMER
 
-Please make sure that you consider copyrights and trademarks when you use names or logos of a company and add a disclaimer to your README.
-You can check other adapters for examples or ask in the developer community. Using a name or logo of a company without permission may cause legal problems for you.
+All product and company names or logos are Trademarks™ or Registered® Trademarks of their respective owners. Their use does not imply any
+Affiliation or endorsement by them or associated affiliates! This personal project is being pursued on a recreational basis and
+Has no business objectives. **Elgato** is a trademark of **Corsair GmbH**.
 
-### Getting started
+### Sentry
+**This adapter uses Sentry libraries to automatically report exceptions and code errors to the developers.**\
+For more details and for information on how to disable error reporting, see.
+[Sentry Plugin Documentation](https://github.com/ioBroker/plugin-sentry#plugin-sentry)! Sentry reports are used starting with js-controller 3.0
+are used.
 
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.elgato-key-light`
+### Description
+This adapter allows you to control [Elgato Key Lights](https://www.elgato.com/de/key-light) via ioBroker.\
+The adapter supports the following functions:
+* Power on/off.
+* Brightness ⇨ (available on all Key Lights).
+* Color temperature ⇨ (only available with [Elgato Key Light](https://www.elgato.com/de/key-light), [Elgato Key Light Air](https://www.elgato.com/de/key-light-air),
+  [Elgato Ring Light](https://www.elgato.com/de/ring-light)
+  and [Elgato Key Light mini](https://www.elgato.com/de/key-light-mini) available)
+* Color ⇨ (only available with [Elgato Light Strip](https://www.elgato.com/de/light-strip))
 
-1. Push all files to the GitHub repo. The creator has already set up the local repository for you:  
-    ```bash
-    git push origin main
-    ```
-1. Add a new secret under https://github.com/xXBJXx/ioBroker.elgato-key-light/settings/secrets. It must be named `AUTO_MERGE_TOKEN` and contain a personal access token with push access to the repository, e.g. yours. You can create a new token under https://github.com/settings/tokens.
+### How do I add a Key Light?
+**The devices are automatically detected through multicast (mDNS) and can then be controlled through the data points and UI.
+There is no provision for adding them manually at the moment.**
 
-1. Head over to [src/main.ts](src/main.ts) and start programming!
 
-### Best Practices
-We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should
-check them out. If you're already experienced, you should also take a look at them - you might learn something new :)
+### Adapter UI
+A classic adapter UI under instances does not exist.\
+![Adapter UI](admin/media/instances.png)
+![Adapter UI](admin/media/elgato-key-light_UI.png)
 
-### Scripts in `package.json`
-Several npm scripts are predefined for your convenience. You can run them using `npm run <scriptname>`
-| Script name | Description |
-|-------------|-------------|
-| `build` | Compile the TypeScript and React sources. |
-| `watch` | Compile the TypeScript and React sources and watch for changes. |
-| `build:ts` | Compile the TypeScript sources. |
-| `watch:ts` | Compile the TypeScript sources and watch for changes. |
-| `build:react` | Compile the React sources. |
-| `watch:react` | Compile the React sources and watch for changes. |
-| `test:ts` | Executes the tests you defined in `*.test.ts` files. |
-| `test:package` | Ensures your `package.json` and `io-package.json` are valid. |
-| `test:integration` | Tests the adapter startup with an actual instance of ioBroker. |
-| `test` | Performs a minimal test run on package files and your tests. |
-| `check` | Performs a type-check on your code (without compiling anything). |
-| `lint` | Runs `ESLint` to check your code for formatting errors and potential bugs. |
-| `translate` | Translates texts in your adapter to all required languages, see [`@iobroker/adapter-dev`](https://github.com/ioBroker/adapter-dev#manage-translations) for more details. |
-| `release` | Creates a new release, see [`@alcalzone/release-script`](https://github.com/AlCalzone/release-script#usage) for more details. |
+What can be done in the UI?
+* No. 1 set the polling interval for the adapter (default: 60 seconds).
+  after changing the interval, the adapter must be restarted, this is done using the Save button.
+* No. 2 set the color temperature for all key lights (2900K to 7000K)
+* No. 3 set the brightness for all Key Lights (0% to 100%)
+* No. 4 set the color for from the Light Strips\
+  ![Adapter UI](admin/media/ColorPicker.png)
+* No. 5 switch the lights on and off
 
-### Configuring the compilation
-The adapter template uses [esbuild](https://esbuild.github.io/) to compile TypeScript and/or React code. You can configure many compilation settings 
-either in `tsconfig.json` or by changing options for the build tasks. These options are described in detail in the
-[`@iobroker/adapter-dev` documentation](https://github.com/ioBroker/adapter-dev#compile-adapter-files).
+After the changes of No. 2, No. 3 and No. 4 you have to click on the Refresh button to apply changes, the adapter will be
+by not restarting.
 
-### Writing tests
-When done right, testing code is invaluable, because it gives you the 
-confidence to change your code while knowing exactly if and when 
-something breaks. A good read on the topic of test-driven development 
-is https://hackernoon.com/introduction-to-test-driven-development-tdd-61a13bc92d92. 
-Although writing tests before the code might seem strange at first, but it has very 
-clear upsides.
+### Warning
+**Please do not access the data points too often, otherwise the devices will not be accessible for a few seconds.** ###
 
-The template provides you with basic tests for the adapter startup and package files.
-It is recommended that you add your own tests into the mix.
+### Data points
+The data points are created automatically when a new device is found.
 
-### Publishing the adapter
-Using GitHub Actions, you can enable automatic releases on npm whenever you push a new git tag that matches the form 
-`v<major>.<minor>.<patch>`. We **strongly recommend** that you do. The necessary steps are described in `.github/workflows/test-and-release.yml`.
+#### Data points for all Key Lights / Light Strips
+![Adapter UI](admin/media/ObjectsMain.png)\
+The data points are divided into:
+* **info** ⇨ Information about the device\.
+  ![Adapter UI](admin/media/objects_info.png)
+* **light** ⇨ Data points for controlling the device, here there are two different types of data points:
+  * for controlling brightness and color temperature.
+    ![Adapter UI](admin/media/objects_light_colorTemp.png)
+  * for controlling the color
+    ![Adapter UI](admin/media/objects_light_color.png)
+* **settings** ⇨ data points for info from the settings of the device
+  ![Adapter UI](admin/media/objects_settings.png)
 
-Since you installed the release script, you can create a new
-release simply by calling:
-```bash
-npm run release
-```
-Additional command line options for the release script are explained in the
-[release-script documentation](https://github.com/AlCalzone/release-script#command-line).
+### Notes
+* The data points for color are only available for the Light Strips.
+* The data points for color temperature are only available for the Key Lights.
+* The data points for brightness are available for all Key Lights and Light Strips.
+* The scenes from the Light Strips are not supported. Since they are not accessible via the API.
 
-To get your adapter released in ioBroker, please refer to the documentation 
-of [ioBroker.repositories](https://github.com/ioBroker/ioBroker.repositories#requirements-for-adapter-to-get-added-to-the-latest-repository).
-
-### Test the adapter manually on a local ioBroker installation
-In order to install the adapter locally without publishing, the following steps are recommended:
-1. Create a tarball from your dev directory:  
-    ```bash
-    npm pack
-    ```
-1. Upload the resulting file to your ioBroker host
-1. Install it locally (The paths are different on Windows):
-    ```bash
-    cd /opt/iobroker
-    npm i /path/to/tarball.tgz
-    ```
-
-For later updates, the above procedure is not necessary. Just do the following:
-1. Overwrite the changed files in the adapter directory (`/opt/iobroker/node_modules/iobroker.elgato-key-light`)
-1. Execute `iobroker upload elgato-key-light` on the ioBroker host
 
 ## Changelog
 <!--
@@ -113,7 +87,7 @@ For later updates, the above procedure is not necessary. Just do the following:
 -->
 
 ### **WORK IN PROGRESS**
-* (xXBJXx) initial release
+* (xXBJXx) first release
 
 ## License
 MIT License

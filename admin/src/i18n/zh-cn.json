@@ -1,3 +1,12 @@
 {
-	"add": "增加"
+	"boxCard_Brightness": "亮度",
+	"boxCard_Color": "颜色",
+	"boxCard_ColorTemp": "色温",
+	"boxCard_update": "更新",
+	"tab_adapterNotAlive": "适配器没有打开。请先打开适配器。",
+	"tab_devices": "设备",
+	"tab_interval": "间隔",
+	"tab_intervalTooltip": "在这里你可以设置适配器的轮询时间间隔。默认设置是60秒。",
+	"tab_noDevices": "没有发现任何设备",
+	"tab_saveButton": "拯救"
 }

@@ -3,12 +3,8 @@
 // Augment the globally declared type ioBroker.AdapterConfig
 declare global {
 	namespace ioBroker {
-		interface Devices {
-			name: string;
-			ip: string;
-		}
 		interface AdapterConfig {
-			devices: Devices[];
+			interval: number;
 		}
 	}
 }

@@ -1,18 +1,26 @@
-// hue-sync-box API https://developers.meethue.com/develop/hue-entertainment/hue-hdmi-sync-box-api/#Device%20Discovery
-
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
 // Load your modules here, e.g.:
 import 'source-map-support/register';
+import { ElgatoKeyLightController } from './lib/ElgatoKeyLightController';
+import { KeyLight, KeyLightInfo, KeyLightOptions } from './types/KeyLight';
+import { stateAttrb } from './lib/object_definition';
+import { LightStrip, LightStripOptions } from './types/LightStrip';
+import { hexToHsb, hsbToHex, hsbToRgb, rgbToHsb } from './lib/color';
+
+// Controller for our Key Lights
+const keyLightController = new ElgatoKeyLightController();
 
 // Global variables here
 
 class ElgatoKeyLight extends utils.Adapter {
 	private requestTimer: ioBroker.Timeout | null;
-	private subscribedStates: string[];
 	private messageHandler: any[];
 	private messageHandlerTimer: ioBroker.Timeout | null;
+	private readonly devices: KeyLight[];
+	private interval: number;
+	private requestObject: KeyLight[];
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -21,12 +29,13 @@ class ElgatoKeyLight extends utils.Adapter {
 		});
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
-		this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 		this.requestTimer = null;
 		this.messageHandlerTimer = null;
-		this.subscribedStates = [];
 		this.messageHandler = [];
+		this.devices = [];
+		this.interval = 300000;
+		this.requestObject = [];
 	}
 
 	/**
@@ -35,8 +44,842 @@ class ElgatoKeyLight extends utils.Adapter {
 	private async onReady(): Promise<void> {
 		// Initialize your adapter here
 		this.messageHandler = [];
+		// convert the interval to milliseconds
+		this.interval = this.config.interval * 1000;
 		// Reset the connection indicator during startup
 		this.setState('info.connection', false, true);
+
+		// collect all devices from the adapter objects
+		const devices = await this.getDevicesAsync();
+		for (const devicesKey in devices) {
+			// console.log(devices[devicesKey]);
+			this.devices.push(devices[devicesKey].native.device);
+		}
+		this.writeLog(`[Adapter v.${this.version} onReady] all devices: ${this.devices.length}`, 'debug');
+		console.log('devices', this.devices);
+
+		await keyLightController.on('newKeyLight', async (newKeyLight: KeyLight) => {
+			// check if the device is already in the list
+			if (this.devices.find((element) => element.info?.serialNumber === newKeyLight.info?.serialNumber)) {
+				this.writeLog(
+					`[Adapter v.${this.version} onReady] Device ${newKeyLight.info?.serialNumber} already in exist`,
+					'debug',
+				);
+				// console.log(`Device ${newKeyLight.info?.serialNumber} already in exist`);
+			} else {
+				// if not in the list then create a new device
+				this.writeLog(
+					`[Adapter v.${this.version} onReady] Device ${newKeyLight.info?.serialNumber} not in exist - add it`,
+					'debug',
+				);
+				this.writeLog(
+					`[Adapter v.${this.version} onReady] add new device: ${newKeyLight.info?.serialNumber} => ${newKeyLight.info?.displayName}`,
+					'debug',
+				);
+				// console.log(`Device ${newKeyLight.info?.serialNumber} not in exist - add it`);
+				this.devices.push(newKeyLight);
+			}
+			this.writeLog(
+				`[Adapter v.${this.version} onReady] start createStates for ${newKeyLight.info?.serialNumber}`,
+				'debug',
+			);
+			await this.createStates(newKeyLight);
+
+			this.writeLog(
+				`[Adapter v.${this.version} onReady] start writeState for ${newKeyLight.info?.serialNumber}`,
+				'debug',
+			);
+			await this.writeState(newKeyLight);
+		});
+		// start the requestData timer
+		this.writeLog(`[Adapter v.${this.version} onReady] start requestData`, 'debug');
+		await this.requestData();
+		this.setState('info.connection', true, true);
+	}
+
+	private async requestData(): Promise<void> {
+		// Request data from all Key Lights every 5 minutes
+		if (this.requestTimer) this.clearTimeout(this.requestTimer);
+		this.requestObject = [];
+		// query all key lights
+		for (const device of this.devices) {
+			const data: KeyLight = {
+				ip: device.ip,
+				port: device.port,
+				name: device.name,
+			};
+			await keyLightController
+				.requestData(data)
+				.then(async (result: KeyLight) => {
+					this.requestObject.push(result);
+					const deviceName = device.info?.serialNumber;
+					this.writeLog(
+						`[Adapter v.${this.version} requestData] request for ${
+							device.info?.displayName
+						} was successful data: ${JSON.stringify(result)}`,
+						'debug',
+					);
+					this.writeLog(
+						`[Adapter v.${this.version} requestData] writeState for ${device.info?.displayName}`,
+						'debug',
+					);
+					await this.setStateAsync(`${deviceName}.reachable`, true, true);
+					await this.writeState(result);
+				})
+				.catch(async (error: Error) => {
+					const deviceName = device.info?.serialNumber;
+					this.writeLog(
+						`[Adapter v.${this.version} requestData] request for ${device.info?.displayName} was not successful`,
+						'debug',
+					);
+					await this.setStateAsync(`${deviceName}.reachable`, false, true);
+					this.writeLog(
+						`[Adapter v.${this.version} requestData] Could not get data from ${device.name} IP: ${device.ip}`,
+						'error',
+					);
+					this.writeLog(
+						`[Adapter v.${this.version} requestData] Error: ${error} message: ${error.message}`,
+						'error',
+					);
+				});
+		}
+		this.requestTimer = this.setTimeout(() => {
+			this.writeLog(`[Adapter v.${this.version} requestData] next request in ${this.interval} ms`, 'debug');
+			this.requestData();
+		}, this.interval);
+	}
+
+	private async writeState(device: KeyLight | undefined): Promise<void> {
+		if (!device) return;
+		let deviceName = '';
+		// write the state of the Key Light
+		if (device.info) {
+			this.writeLog(
+				`[Adapter v.${this.version} writeState] write all info states for ${device.info.displayName}`,
+				'debug',
+			);
+			deviceName = device.info.serialNumber;
+			await this.setStateAsync(`${deviceName}.info.ip`, { val: device.ip, ack: true });
+			await this.setStateAsync(`${deviceName}.info.port`, { val: device.port, ack: true });
+			await this.setStateAsync(`${deviceName}.info.name`, { val: device.name, ack: true });
+			for (const [key, value] of Object.entries(device.info)) {
+				if (key !== 'wifi-info') {
+					if (key === 'features') {
+						await this.setStateAsync(`${deviceName}.info.${key}`, {
+							val: JSON.stringify(value),
+							ack: true,
+						});
+					} else if (key === 'displayName') {
+						// find the configuration of the device and the index
+						const deviceConfig = this.devices.find(
+							(element) => element.info?.serialNumber === device.info?.serialNumber,
+						);
+
+						if (deviceConfig) {
+							// if the name was changed then write the new name into the configuration
+							if (deviceConfig.info?.displayName !== value) {
+								// find the index of the device
+								const index = this.devices.findIndex(
+									(element) => element.info?.serialNumber === device.info?.serialNumber,
+								);
+								if (index !== -1) {
+									this.devices[index].info!.displayName = value as string;
+									this.writeLog(
+										`[Adapter v.${this.version} writeState] Change name of ${device.info?.displayName} to ${value}`,
+										'debug',
+									);
+									await this.setStateAsync(`${deviceName}.info.${key}`, { val: value, ack: true });
+									await this.extendObjectAsync(deviceName, {
+										type: 'device',
+										common: {
+											name: device.info.displayName || device.info.productName,
+											// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+											// @ts-ignore
+											statusStates: {
+												onlineId: `${this.namespace}.${deviceName}.reachable`,
+											},
+										},
+										native: {
+											ip: device.ip,
+											port: device.port,
+											device: device,
+										},
+									});
+								}
+							} else {
+								this.writeLog(
+									`[Adapter v.${this.version} writeState] Name of ${device.info?.displayName} is ${value}`,
+									'debug',
+								);
+								await this.setStateAsync(`${deviceName}.info.${key}`, { val: value, ack: true });
+							}
+						}
+					} else {
+						this.writeLog(
+							`[Adapter v.${this.version} writeState] write state ${key} with value ${value}`,
+							'debug',
+						);
+						await this.setStateAsync(`${deviceName}.info.${key}`, { val: value, ack: true });
+					}
+				} else {
+					for (const [key2, value2] of Object.entries(value)) {
+						this.writeLog(
+							`[Adapter v.${this.version} writeState] write state ${key2} with value ${value2}`,
+							'debug',
+						);
+						await this.setStateAsync(`${deviceName}.info.wifi-info.${key2}`, {
+							val: value2 as any,
+							ack: true,
+						});
+					}
+				}
+			}
+		}
+		if (device.battery) {
+			this.writeLog(`[Adapter v.${this.version} writeState] write battery state`, 'debug');
+			for (const [key, value] of Object.entries(device.battery)) {
+				if (key === 'powerSource') {
+					await this.setStateAsync(`${deviceName}.battery.${key}`, {
+						val: value === 1 ? 'power supplies' : value === 2 ? 'battery' : 'unknown',
+						ack: true,
+					});
+				} else if (key === 'currentBatteryVoltage') {
+					await this.setStateAsync(`${deviceName}.battery.${key}`, {
+						val: value / 1000,
+						ack: true,
+					});
+				} else if (key === 'inputChargeVoltage') {
+					await this.setStateAsync(`${deviceName}.battery.${key}`, {
+						val: value / 1000,
+						ack: true,
+					});
+				} else if (key === 'inputChargeCurrent') {
+					await this.setStateAsync(`${deviceName}.battery.${key}`, {
+						val: value / 1000,
+						ack: true,
+					});
+				} else if (key === 'level') {
+					await this.setStateAsync(`${deviceName}.battery.${key}`, {
+						val: Math.round(value),
+						ack: true,
+					});
+				} else {
+					await this.setStateAsync(`${deviceName}.battery.${key}`, { val: value, ack: true });
+				}
+			}
+		}
+		if (device.settings) {
+			this.writeLog(`[Adapter v.${this.version} writeState] write settings state`, 'debug');
+			for (const [key, value] of Object.entries(device.settings)) {
+				if (key !== `battery`) {
+					if (key === 'powerOnTemperature') {
+						// convert the temperature from mired to Kelvin
+						const temp = Math.round(1000000 / value);
+						await this.setStateAsync(`${deviceName}.settings.${key}`, { val: temp, ack: true });
+					} else {
+						await this.setStateAsync(`${deviceName}.settings.${key}`, { val: value, ack: true });
+					}
+				} else {
+					if (device.settings.battery) {
+						for (const [key2, value2] of Object.entries(device.settings.battery)) {
+							if (key2 !== `energySaving`) {
+								await this.setStateAsync(`${deviceName}.settings.battery.${key2}`, {
+									val: value2 as any,
+									ack: true,
+								});
+							} else {
+								for (const [key3, value3] of Object.entries(device.settings.battery.energySaving)) {
+									if (key3 !== `adjustBrightness`) {
+										await this.setStateAsync(
+											`${deviceName}.settings.battery.energySaving.${key3}`,
+											{
+												val: value3 as any,
+												ack: true,
+											},
+										);
+									} else {
+										for (const [key4, value4] of Object.entries(
+											device.settings.battery.energySaving.adjustBrightness,
+										)) {
+											await this.setStateAsync(
+												`${deviceName}.settings.battery.energySaving.adjustBrightness.${key4}`,
+												{
+													val: value4 as any,
+													ack: true,
+												},
+											);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if (device.light) {
+			this.writeLog(`[Adapter v.${this.version} writeState] write light state`, 'debug');
+			for (const [key, value] of Object.entries(device.light)) {
+				if (key !== `lights`) {
+					await this.setStateAsync(`${deviceName}.light.${key}`, { val: value, ack: true });
+				} else {
+					for (const [key2, value2] of Object.entries(device.light.lights)) {
+						for (const [key3, value3] of Object.entries(value2)) {
+							if (key3 === 'brightness') {
+								await this.setStateAsync(`${deviceName}.light.lights.${key2}.${key3}`, {
+									val: value3 as number,
+									ack: true,
+								});
+							}
+							if (key3 === 'saturation') {
+								await this.setStateAsync(`${deviceName}.light.lights.${key2}.${key3}`, {
+									val: value3 as number,
+									ack: true,
+								});
+							}
+							if (key3 === 'on') {
+								await this.setStateAsync(`${deviceName}.light.lights.${key2}.${key3}`, {
+									val: value3 === 1,
+									ack: true,
+								});
+							}
+							if (key3 === 'temperature') {
+								// convert the temperature from mired to Kelvin
+								const kelvin = Math.round(1000000 / value3);
+								await this.setStateAsync(`${deviceName}.light.lights.${key2}.${key3}`, {
+									val: kelvin,
+									ack: true,
+								});
+							}
+							if (key3 === 'hue') {
+								await this.setStateAsync(`${deviceName}.light.lights.${key2}.${key3}`, {
+									val: value3 as number,
+									ack: true,
+								});
+
+								if (device.info?.productName === 'Elgato Light Strip') {
+									const stripDevice = device.light as LightStripOptions;
+									let hue = stripDevice.lights[0].hue;
+									let sat = stripDevice.lights[0].saturation;
+									let bri = stripDevice.lights[0].brightness;
+
+									if (!hue) hue = 0;
+									if (!sat) sat = 0;
+									if (!bri) bri = 0;
+
+									const hex = hsbToHex(hue, sat, bri);
+									this.writeLog(
+										`[Adapter v.${this.version} writeState] convert hsb hue: ${hue}, sat: ${sat}, bri: ${bri} to hex: ${hex} for device: ${deviceName} and write to state `,
+										'debug',
+									);
+									const rgb = hsbToRgb(hue, sat, bri);
+
+									await this.setStateAsync(`${deviceName}.light.lights.${key2}.hex`, {
+										val: hex,
+										ack: true,
+									});
+									await this.setStateAsync(`${deviceName}.light.lights.${key2}.rgb`, {
+										val: rgb,
+										ack: true,
+									});
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private async createStates(device: KeyLight): Promise<void> {
+		let deviceName = '';
+		// check if the info is available in device
+		if (device.info) {
+			deviceName = device.info.serialNumber;
+			this.writeLog(
+				`[Adapter v.${this.version} createStates] create info states for device: ${deviceName}`,
+				'debug',
+			);
+			// create the device
+			await this.extendObjectAsync(deviceName, {
+				type: 'device',
+				common: {
+					name: device.info.displayName || device.info.productName,
+					// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+					// @ts-ignore
+					statusStates: {
+						onlineId: `${this.namespace}.${deviceName}.reachable`,
+					},
+				},
+				native: {
+					ip: device.ip,
+					port: device.port,
+					device: device,
+				},
+			});
+
+			// create the channel for the states
+			await this.extendObjectAsync(`${deviceName}.info`, {
+				type: 'channel',
+				common: {
+					name: 'Info',
+					desc: 'Information about the device',
+				},
+				native: {},
+			});
+
+			await this.extendObjectAsync(`${deviceName}.identify`, {
+				type: 'state',
+				common: {
+					name: 'Identify',
+					desc: 'Identify the device',
+					type: 'boolean',
+					role: 'button',
+					def: true,
+					read: true,
+					write: true,
+				},
+				native: {
+					ip: device.ip,
+					port: device.port,
+					productName: device.info.productName,
+				},
+			});
+			this.subscribeStates(`${deviceName}.identify`);
+
+			await this.extendObjectAsync(`${deviceName}.reachable`, {
+				type: 'state',
+				common: {
+					name: 'Reachable',
+					desc: 'Is the device reachable',
+					type: 'boolean',
+					role: 'indicator.reachable',
+					def: false,
+					read: true,
+					write: false,
+				},
+				native: {},
+			});
+
+			await this.extendObjectAsync(`${deviceName}.info.ip`, {
+				type: 'state',
+				common: {
+					name: 'IP Address',
+					desc: 'IP of the device',
+					type: 'string',
+					role: 'info.ip',
+					read: true,
+					write: false,
+				},
+				native: {
+					ip: device.ip,
+					port: device.port,
+					productName: device.info.productName,
+				},
+			});
+			await this.extendObjectAsync(`${deviceName}.info.port`, {
+				type: 'state',
+				common: {
+					name: 'Port',
+					desc: 'Port of the device',
+					type: 'number',
+					role: 'info.port',
+					read: true,
+					write: false,
+				},
+				native: {
+					ip: device.ip,
+					port: device.port,
+					productName: device.info.productName,
+				},
+			});
+			await this.extendObjectAsync(`${deviceName}.info.name`, {
+				type: 'state',
+				common: {
+					name: 'Name',
+					desc: 'Name of the device',
+					type: 'string',
+					role: 'info.name',
+					read: true,
+					write: false,
+				},
+				native: {
+					ip: device.ip,
+					port: device.port,
+					productName: device.info.productName,
+				},
+			});
+			await this.extendObjectAsync(`info.connections`, {
+				type: 'state',
+				common: {
+					name: 'Connections',
+					desc: 'Configured connections',
+					type: 'string',
+					role: 'json',
+					read: true,
+					write: false,
+				},
+				native: {},
+			});
+
+			for (const [key] of Object.entries(device.info)) {
+				if (key !== 'wifi-info') {
+					let common: ioBroker.StateCommon = { name: '', role: '', read: false, write: false };
+					common = stateAttrb[key as keyof typeof stateAttrb];
+
+					await this.extendObjectAsync(`${deviceName}.info.${key}`, {
+						type: 'state',
+						common,
+						native: {
+							ip: device.ip,
+							port: device.port,
+							productName: device.info.productName,
+						},
+					});
+					// check if the state is writable
+					if (common.write) {
+						this.subscribeStates(`${deviceName}.info.${key}`);
+					}
+				} else {
+					for (const [key2] of Object.entries(device.info['wifi-info'])) {
+						// console.log(`${deviceName}.info.wifi-info.${key2}`);
+						await this.extendObjectAsync(`${deviceName}.info.${key}`, {
+							type: 'channel',
+							common: {
+								name: 'wifi-info',
+								desc: 'Information about the wifi',
+							},
+							native: {},
+						});
+						let common: ioBroker.StateCommon = { name: '', role: '', read: false, write: false };
+						common = stateAttrb[key2 as keyof typeof stateAttrb];
+
+						await this.extendObjectAsync(`${deviceName}.info.${key}.${key2}`, {
+							type: 'state',
+							common,
+							native: {
+								ip: device.ip,
+								port: device.port,
+								productName: device.info.productName,
+							},
+						});
+						//  check if the state is writable
+						if (common.write) {
+							this.subscribeStates(`${deviceName}.info.${key}.${key2}`);
+						}
+					}
+				}
+			}
+			// end of info
+		}
+		if (device.battery) {
+			this.writeLog(`[Adapter v.${this.version} createStates] create battery states for ${deviceName}`, 'debug');
+			await this.extendObjectAsync(`${deviceName}.battery`, {
+				type: 'channel',
+				common: {
+					name: 'battery Info',
+					desc: 'battery info of the device',
+				},
+				native: {},
+			});
+			for (const [key] of Object.entries(device.battery)) {
+				let common: ioBroker.StateCommon = { name: '', role: '', read: false, write: false };
+				common = stateAttrb[key as keyof typeof stateAttrb];
+				await this.extendObjectAsync(`${deviceName}.battery.${key}`, {
+					type: 'state',
+					common,
+					native: {
+						ip: device.ip,
+						port: device.port,
+						productName: device.info?.productName,
+					},
+				});
+			}
+		}
+		// create the states on the key of device.light
+		if (device.light) {
+			this.writeLog(`[Adapter v.${this.version} createStates] create light states for ${deviceName}`, 'debug');
+			await this.extendObjectAsync(`${deviceName}.light`, {
+				type: 'channel',
+				common: {
+					name: 'Light',
+					desc: 'Light settings of the device',
+				},
+				native: {},
+			});
+
+			for (const [key] of Object.entries(device.light)) {
+				if (key !== `lights`) {
+					let common: ioBroker.StateCommon = {
+						name: '',
+						role: '',
+						read: false,
+						write: false,
+					};
+					common = stateAttrb[key as keyof typeof stateAttrb];
+
+					await this.extendObjectAsync(`${deviceName}.light.${key}`, {
+						type: 'state',
+						common,
+						native: {
+							ip: device.ip,
+							port: device.port,
+							productName: device.info?.productName,
+						},
+					});
+					// check if the state is writable
+					if (common.write) {
+						this.subscribeStates(`${deviceName}.light.${key}`);
+					}
+				} else {
+					// create the states on the key of device.light.lights
+					for (const [key2, value2] of Object.entries(device.light.lights)) {
+						await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}`, {
+							type: 'channel',
+							common: {
+								name: 'lights',
+								desc: 'Information about the lights',
+							},
+							native: {},
+						});
+						for (const [key3] of Object.entries(value2)) {
+							let common: ioBroker.StateCommon = {
+								name: '',
+								role: '',
+								read: false,
+								write: false,
+							};
+							if (
+								key3 == 'hue' ||
+								key3 == 'saturation' ||
+								key3 == 'brightness' ||
+								key3 == 'temperature' ||
+								key3 == 'on'
+							) {
+								common = stateAttrb[key3 as keyof typeof stateAttrb];
+
+								await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}.${key3}`, {
+									type: 'state',
+									common,
+									native: {
+										ip: device.ip,
+										port: device.port,
+										productName: device.info?.productName,
+									},
+								});
+								// check if the state is writable
+								if (common.write) {
+									this.subscribeStates(`${deviceName}.light.${key}.${key2}.${key3}`);
+									this.subscribeStates(`${deviceName}.light.${key}.${key2}.hue`);
+									this.subscribeStates(`${deviceName}.light.${key}.${key2}.saturation`);
+								}
+
+								if (device.info?.productName === 'Elgato Light Strip') {
+									await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}.hex`, {
+										type: 'state',
+										common: stateAttrb.hex,
+										native: {
+											ip: device.ip,
+											port: device.port,
+											productName: device.info?.productName,
+										},
+									});
+									this.subscribeStates(`${deviceName}.light.${key}.${key2}.hex`);
+									await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}.rgb`, {
+										type: 'state',
+										common: stateAttrb.rgb,
+										native: {
+											ip: device.ip,
+											port: device.port,
+											productName: device.info?.productName,
+										},
+									});
+									this.subscribeStates(`${deviceName}.light.${key}.${key2}.rgb`);
+								}
+							} else {
+								console.log(`key3: ${key3}`);
+							}
+						}
+					}
+				}
+			}
+		}
+		// create the states on the key of device.settings
+		if (device.settings) {
+			this.writeLog(`[Adapter v.${this.version} createStates] create settings states for ${deviceName}`, 'debug');
+			await this.extendObjectAsync(`${deviceName}.settings`, {
+				type: 'channel',
+				common: {
+					name: 'Settings',
+					desc: 'Settings of the device',
+				},
+				native: {},
+			});
+
+			for (const [key] of Object.entries(device.settings)) {
+				if (key !== `battery`) {
+					let common: ioBroker.StateCommon = { name: '', role: '', read: false, write: false };
+					common = stateAttrb[key as keyof typeof stateAttrb];
+
+					await this.extendObjectAsync(`${deviceName}.settings.${key}`, {
+						type: 'state',
+						common,
+						native: {
+							ip: device.ip,
+							port: device.port,
+							productName: device.info?.productName,
+						},
+					});
+					// check if the state is writable
+					if (common.write) {
+						this.subscribeStates(`${deviceName}.settings.${key}`);
+					}
+					// end of settings
+				} else {
+					if (device.settings.battery) {
+						// create the states on the key of device.settings.battery
+						for (const [key2] of Object.entries(device.settings.battery)) {
+							if (key2 !== `energySaving`) {
+								await this.extendObjectAsync(`${deviceName}.settings.${key}`, {
+									type: 'channel',
+									common: {
+										name: 'battery',
+										desc: 'Information about the battery',
+									},
+									native: {},
+								});
+								let common: ioBroker.StateCommon = { name: '', role: '', read: false, write: false };
+								common = stateAttrb[key2 as keyof typeof stateAttrb];
+
+								await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}`, {
+									type: 'state',
+									common,
+									native: {
+										ip: device.ip,
+										port: device.port,
+										productName: device.info?.productName,
+									},
+								});
+								// check if the state is writable
+								if (common.write) {
+									this.subscribeStates(`${deviceName}.settings.${key}.${key2}`);
+								}
+								// end of battery
+							} else {
+								// energySaving
+								for (const [key3] of Object.entries(device.settings.battery.energySaving)) {
+									if (key3 !== `adjustBrightness`) {
+										await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}.${key3}`, {
+											type: 'channel',
+											common: {
+												name: 'energySaving',
+												desc: 'Information about the energy saving',
+											},
+											native: {},
+										});
+										let common: ioBroker.StateCommon = {
+											name: '',
+											role: '',
+											read: false,
+											write: false,
+										};
+										common = stateAttrb[key3 as keyof typeof stateAttrb];
+
+										await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}.${key3}`, {
+											type: 'state',
+											common,
+											native: {
+												ip: device.ip,
+												port: device.port,
+												productName: device.info?.productName,
+											},
+										});
+										// check if the state is writable
+										if (common.write) {
+											this.subscribeStates(`${deviceName}.settings.${key}.${key2}.${key3}`);
+										}
+									} else {
+										// adjustBrightness
+										for (const [key4] of Object.entries(
+											device.settings.battery.energySaving.adjustBrightness,
+										)) {
+											if (key4 === `brightness`) {
+												let common: ioBroker.StateCommon = {
+													name: '',
+													role: '',
+													read: false,
+													write: false,
+												};
+												common = stateAttrb['adjustBrightness' as keyof typeof stateAttrb];
+
+												await this.extendObjectAsync(
+													`${deviceName}.settings.${key}.${key2}.${key3}.${key4}`,
+													{
+														type: 'state',
+														common,
+														native: {
+															ip: device.ip,
+															port: device.port,
+															productName: device.info?.productName,
+														},
+													},
+												);
+											} else {
+												await this.extendObjectAsync(
+													`${deviceName}.settings.${key}.${key2}.${key3}.${key4}`,
+													{
+														type: 'channel',
+														common: {
+															name: 'adjustBrightness',
+															desc: 'Information about the adjustBrightness',
+														},
+														native: {},
+													},
+												);
+												let common: ioBroker.StateCommon = {
+													name: '',
+													role: '',
+													read: false,
+													write: false,
+												};
+												common = stateAttrb[key4 as keyof typeof stateAttrb];
+
+												await this.extendObjectAsync(
+													`${deviceName}.settings.${key}.${key2}.${key3}.${key4}`,
+													{
+														type: 'state',
+														common,
+														native: {
+															ip: device.ip,
+															port: device.port,
+															productName: device.info?.productName,
+														},
+													},
+												);
+												// check if the state is writable
+												if (common.write) {
+													this.subscribeStates(
+														`${deviceName}.settings.${key}.${key2}.${key3}.${key4}`,
+													);
+												}
+											}
+											// end of adjustBrightness
+										}
+									}
+									// end of energySaving
+								}
+							}
+						}
+					}
+				}
+				// end of settings
+			}
+		}
+		// create the states on the key of device.battery
+
+		await this.setStateAsync(`${deviceName}.reachable`, true, true);
+		// const values = ;
+		await this.setStateAsync('info.connections', { val: JSON.stringify(this.devices), ack: true });
 	}
 
 	/**
@@ -93,23 +936,6 @@ class ElgatoKeyLight extends utils.Adapter {
 		}
 	}
 
-	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-	// /**
-	//  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-	//  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-	//  */
-	private async onMessage(obj: ioBroker.Message): Promise<void> {
-		if (typeof obj === 'object' && obj.message) {
-			if (obj.command === 'send') {
-				// e.g. send email or pushover or whatever
-				this.log.info('send command');
-
-				// Send response in callback if required
-				if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-			}
-		}
-	}
-
 	/**
 	 * Is called if a subscribed state changes
 	 */
@@ -119,8 +945,429 @@ class ElgatoKeyLight extends utils.Adapter {
 				// ignore the state change from the adapter itself
 				return;
 			} else {
-				// The state was changed
-				this.log.debug(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+				this.writeLog(
+					`[Adapter v.${this.version} onStateChange] state ${id} changed: ${state.val} (ack = ${state.ack})`,
+					'debug',
+				);
+				const stateName = id.split('.').pop();
+				const obj = await this.getForeignObjectAsync(id);
+
+				if (obj) {
+					const native = obj.native;
+					if (stateName === 'identify') {
+						// identify the device
+						this.writeLog(`[Adapter v.${this.version} onStateChange] identify the device`, 'debug');
+						await keyLightController
+							.identify(native as KeyLight)
+							.then(() => {
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] identify was successful`,
+									'info',
+								);
+							})
+							.catch((error) => {
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] identify was not successful: ${error}`,
+									'error',
+								);
+							});
+					}
+					if (stateName === 'on') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] on for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						const value = state.val ? 1 : 0;
+						const options = {
+							lights: [
+								{
+									on: value,
+								},
+							],
+						};
+						await keyLightController
+							.updateLightOptions(native as KeyLight, options as KeyLightOptions)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] on for ${native.ip} set to ${value} => ${state.val}`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] on for ${native.ip} set to ${value} => ${state.val}`,
+									'debug',
+								);
+								await this.setStateAsync(id, state.val, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send on for ${native.ip} ${
+											error.message
+										} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send on for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+					if (stateName === 'brightness') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] brightness for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						let options = {};
+						if (native.productName === 'Elgato Light Strip') {
+							// suche in this.requestObjects nach dem passenden Objekt
+							const requestObject = this.requestObject.find((obj) => obj.ip === native.ip) as LightStrip;
+							if (requestObject) {
+								// prüfe ob in requestObject.light.lights[0] die property scene vorhanden ist
+								if (requestObject.light?.lights[0].scene) {
+									options = {
+										lights: [
+											{
+												id: requestObject.light.lights[0].id,
+												name: requestObject.light.lights[0].name,
+												brightness: state.val,
+												numberOfSceneElements:
+													requestObject.light.lights[0].numberOfSceneElements,
+												scene: requestObject.light.lights[0].scene,
+											},
+										],
+									};
+									console.log(`scene Mode`);
+								} else {
+									options = {
+										lights: [
+											{
+												brightness: state.val,
+											},
+										],
+									};
+									console.log(`brightness Mode`);
+								}
+							}
+						} else {
+							options = {
+								lights: [
+									{
+										brightness: state.val,
+									},
+								],
+							};
+						}
+						await keyLightController
+							.updateLightOptions(native as KeyLight, options as KeyLightOptions)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] brightness for ${native.ip} set to ${state.val}%`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] brightness for ${native.ip} set to ${state.val}%`,
+									'debug',
+								);
+								await this.setStateAsync(id, state.val as number, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send brightness for ${
+											native.ip
+										} ${error.message} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send brightness for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+					if (stateName === 'temperature') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] temperature for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						const value = state.val as number;
+
+						let mired = 143;
+						// convert the temperature from kelvin to mired
+						if (value) {
+							mired = 1000000 / value;
+							// round off to 0 decimal places
+							mired = Math.round(mired);
+							// check if the value is within the range
+							if (mired < 143) mired = 143;
+							if (mired > 344) mired = 344;
+						} else {
+							mired = 143;
+						}
+
+						const options = {
+							lights: [
+								{
+									temperature: mired,
+								},
+							],
+						};
+						await keyLightController
+							.updateLightOptions(native as KeyLight, options as KeyLightOptions)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] temperature for ${native.ip} set to ${mired} => ${value}K`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] temperature for ${native.ip} set to ${mired} => ${value}K`,
+									'debug',
+								);
+								await this.setStateAsync(id, value, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send temperature for ${
+											native.ip
+										} ${error.message} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send temperature for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+					if (stateName === 'displayName') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] displayName for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						const value = state.val;
+						const options = {
+							displayName: value,
+						};
+						await keyLightController
+							.updateLightInfo(native as KeyLight, options as KeyLightInfo)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] displayName for ${native.ip} set to ${value}`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] displayName for ${native.ip} set to ${value}`,
+									'debug',
+								);
+								await this.setStateAsync(id, value, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send displayName for ${
+											native.ip
+										} ${error.message} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send displayName for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+					if (stateName === 'hue') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] hue for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						const value = state.val as number;
+						const options = {
+							lights: [
+								{
+									hue: value,
+								},
+							],
+						};
+						await keyLightController
+							.updateLightOptions(native as KeyLight, options as LightStripOptions)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] hue for ${native.ip} set to ${value}`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] hue for ${native.ip} set to ${value}`,
+									'debug',
+								);
+								await this.setStateAsync(id, value, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send hue for ${native.ip} ${
+											error.message
+										} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send hue for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+					if (stateName === 'saturation') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] saturation for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						const value = state.val as number;
+						const options = {
+							lights: [
+								{
+									saturation: value,
+								},
+							],
+						};
+						await keyLightController
+							.updateLightOptions(native as KeyLight, options as LightStripOptions)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] saturation for ${native.ip} set to ${value}`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] saturation for ${native.ip} set to ${value}`,
+									'debug',
+								);
+								await this.setStateAsync(id, value, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send saturation for ${
+											native.ip
+										} ${error.message} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send saturation for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+					if (stateName === 'hex') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] hex for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						const value = state.val as string;
+
+						let hue = 0;
+						let sat = 0;
+						let bri = 0;
+
+						const hsb = hexToHsb(value);
+						hue = Math.round(hsb[0]);
+						sat = Math.round(hsb[1]);
+						bri = Math.round(hsb[2]);
+
+						const options = {
+							lights: [
+								{
+									hue: hue,
+									saturation: sat,
+									brightness: bri,
+								},
+							],
+						};
+						await keyLightController
+							.updateLightOptions(native as KeyLight, options as LightStripOptions)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] hex for ${native.ip} set to ${value}`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] hex for ${native.ip} set to ${value}`,
+									'debug',
+								);
+								await this.setStateAsync(id, value, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send hex for ${native.ip} ${
+											error.message
+										} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send hex for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+					if (stateName === 'rgb') {
+						this.writeLog(
+							`[Adapter v.${this.version} onStateChange] rgb for ${native.ip} set to ${state.val}`,
+							'debug',
+						);
+						const value = state.val as string;
+
+						let hue = 0;
+						let sat = 0;
+						let bri = 0;
+
+						const rgb = value.split(',');
+						const hsb = rgbToHsb(parseInt(rgb[0]), parseInt(rgb[1]), parseInt(rgb[2]));
+						hue = Math.round(hsb[0]);
+						sat = Math.round(hsb[1]);
+						bri = Math.round(hsb[2]);
+
+						const options = {
+							lights: [
+								{
+									hue: hue,
+									saturation: sat,
+									brightness: bri,
+								},
+							],
+						};
+						await keyLightController
+							.updateLightOptions(native as KeyLight, options as LightStripOptions)
+							.then(async (): Promise<void> => {
+								console.log(
+									`[Adapter v.${this.version} onStateChange] rgb for ${native.ip} set to ${value}`,
+								);
+								this.writeLog(
+									`[Adapter v.${this.version} onStateChange] rgb for ${native.ip} set to ${value}`,
+									'debug',
+								);
+								await this.setStateAsync(id, value, true);
+							})
+							.catch((error) => {
+								if (error.response) {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send rgb for ${native.ip} ${
+											error.message
+										} >> message: ${JSON.stringify(error.response.data.errors)}`,
+										'error',
+									);
+								} else {
+									this.writeLog(
+										`[Adapter v.${this.version} onStateChange] Error send rgb for ${native.ip} ${error.message}`,
+										'error',
+									);
+								}
+							});
+					}
+				}
 			}
 		} else {
 			return;
@@ -132,17 +1379,14 @@ class ElgatoKeyLight extends utils.Adapter {
 	 */
 	private async onUnload(callback: () => void): Promise<void> {
 		try {
+			this.writeLog(`[Adapter v.${this.version} onUnload] Adapter stopped`, 'debug');
 			// Here you must clear all timeouts or intervals that may still be active
 			if (this.requestTimer) this.clearTimeout(this.requestTimer);
 			if (this.messageHandlerTimer) this.clearTimeout(this.messageHandlerTimer);
 			this.setState('info.connection', false, true);
-			// for (const devicesKey in this.config.devices) {
-			// 	this.setState(
-			// 		`box_${await replaceFunktion(this.config.devices[devicesKey].name)}.reachable`,
-			// 		false,
-			// 		true,
-			// 	);
-			// }
+			for (const devicesKey in this.devices) {
+				this.setState(`${this.devices[devicesKey].info?.serialNumber}.reachable`, false, true);
+			}
 
 			callback();
 		} catch (e) {

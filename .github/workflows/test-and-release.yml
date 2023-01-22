@@ -89,8 +89,8 @@ jobs:
                   sentry: true
                   sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
                   sentry-org: 'issi'
-                  sentry-project: 'iobroker-hue-sync-box'
-                  sentry-version-prefix: 'iobroker.hue-sync-box'
+                  sentry-project: 'iobroker-elgato-key-light'
+                  sentry-version-prefix: 'iobroker.elgato-key-light'
                   sentry-sourcemap-paths: 'build/ admin/build/'
                   sentry-url: 'https://sentry.io'
                   sentry-github-integration: true

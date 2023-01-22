@@ -1,3 +1,12 @@
 {
-	"add": "добавьте"
+	"boxCard_Brightness": "Яркость",
+	"boxCard_Color": "Цвет",
+	"boxCard_ColorTemp": "Цветовая температура",
+	"boxCard_update": "Обновление",
+	"tab_adapterNotAlive": "Адаптер не включен. Пожалуйста, сначала включите адаптер.",
+	"tab_devices": "устройства",
+	"tab_interval": "интервал",
+	"tab_intervalTooltip": "Здесь можно задать интервал опроса адаптера. По умолчанию установлено значение 60 секунд.",
+	"tab_noDevices": "Устройства не найдены",
+	"tab_saveButton": "сохранить"
 }

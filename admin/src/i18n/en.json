@@ -1,3 +1,12 @@
 {
-	"add": "add"
+	"boxCard_Brightness": "Brightness",
+	"boxCard_Color": "Color",
+	"boxCard_ColorTemp": "Color temperature",
+	"boxCard_update": "Update",
+	"tab_adapterNotAlive": "Adapter is not switched on. Please turn on the adapter first.",
+	"tab_devices": "Devices",
+	"tab_interval": "Interval",
+	"tab_intervalTooltip": "Here you can set the polling interval for the adapter. The default setting is 60 seconds.",
+	"tab_noDevices": "No devices were found",
+	"tab_saveButton": "save"
 }

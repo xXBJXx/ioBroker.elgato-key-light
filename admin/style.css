@@ -35,3 +35,7 @@ label > i[title] {
 	width: 100px !important;
 
 	}
+.buttons {
+	display: none !important;
+	}
+

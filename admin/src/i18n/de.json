@@ -1,3 +1,12 @@
 {
-	"add": "hinzufügen"
+	"boxCard_Brightness": "Helligkeit",
+	"boxCard_Color": "Farbe",
+	"boxCard_ColorTemp": "Farbtemperatur",
+	"boxCard_update": "Aktualisieren",
+	"tab_adapterNotAlive": "Der Adapter ist nicht eingeschaltet. Bitte schalten Sie zuerst den Adapter ein.",
+	"tab_devices": "Geräte",
+	"tab_interval": "Intervall",
+	"tab_intervalTooltip": "Hier können Sie das Abfrageintervall für den Adapter einstellen. Die Standardeinstellung ist 60 Sekunden.",
+	"tab_noDevices": "Es wurden keine Geräte gefunden",
+	"tab_saveButton": "Speichern"
 }

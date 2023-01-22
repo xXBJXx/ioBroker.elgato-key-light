@@ -1,3 +1,12 @@
 {
-	"add": "dodaj"
+	"boxCard_Brightness": "Jasność",
+	"boxCard_Color": "Kolor",
+	"boxCard_ColorTemp": "Temperatura barwowa",
+	"boxCard_update": "Actualização",
+	"tab_adapterNotAlive": "O adaptador não está ligado. Por favor, ligue primeiro o adaptador.",
+	"tab_devices": "urządzenia",
+	"tab_interval": "interwał",
+	"tab_intervalTooltip": "Tutaj można ustawić interwał pollingu dla adaptera. Domyślnym ustawieniem jest 60 sekund.",
+	"tab_noDevices": "Nie znaleziono żadnych urządzeń",
+	"tab_saveButton": "uratować"
 }

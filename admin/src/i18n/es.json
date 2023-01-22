@@ -1,3 +1,12 @@
 {
-	"add": "añade"
+	"boxCard_Brightness": "Luminosidad",
+	"boxCard_Color": "Color",
+	"boxCard_ColorTemp": "Temperatura de color",
+	"boxCard_update": "Actualización",
+	"tab_adapterNotAlive": "El adaptador no está encendido. Encienda primero el adaptador.",
+	"tab_devices": "dispositivos",
+	"tab_interval": "intervalo",
+	"tab_intervalTooltip": "Aquí puede establecer el intervalo de sondeo del adaptador. El ajuste por defecto es de 60 segundos.",
+	"tab_noDevices": "No se han encontrado dispositivos",
+	"tab_saveButton": "guardar"
 }

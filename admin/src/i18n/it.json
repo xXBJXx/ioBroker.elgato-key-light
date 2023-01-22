@@ -1,3 +1,12 @@
 {
-	"add": "aggiungere"
+	"boxCard_Brightness": "Luminosità",
+	"boxCard_Color": "Colore",
+	"boxCard_ColorTemp": "Temperatura di colore",
+	"boxCard_update": "Aggiornamento",
+	"tab_adapterNotAlive": "L'adattatore non è acceso. Accendere prima l'adattatore.",
+	"tab_devices": "dispositivi",
+	"tab_interval": "intervallo",
+	"tab_intervalTooltip": "Qui è possibile impostare l'intervallo di polling per l'adattatore. L'impostazione predefinita è 60 secondi.",
+	"tab_noDevices": "Non sono stati trovati dispositivi",
+	"tab_saveButton": "salvare"
 }
