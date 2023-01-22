@@ -1,8 +1,22 @@
 {
 	"common": {
 		"name": "elgato-key-light",
-		"version": "0.0.1",
-		"news": {},
+		"version": "0.0.2",
+		"news": {
+			"0.0.2": {
+				"en": "first release",
+				"de": "erste Veröffentlichung",
+				"ru": "первый выпуск",
+				"pt": "primeiro lançamento",
+				"nl": "eerste uitgave",
+				"fr": "première version",
+				"it": "prima uscita",
+				"es": "primer lanzamiento",
+				"pl": "pierwsze wydanie",
+				"uk": "перший реліз",
+				"zh-cn": "首次释放"
+			}
+		},
 		"title": "Elgato Key Light",
 		"titleLang": {
 			"en": "Elgato Key Light",
