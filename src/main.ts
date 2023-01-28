@@ -868,10 +868,8 @@ class ElgatoKeyLight extends utils.Adapter {
 					`[Adapter v.${this.version} Axios: ${axios.VERSION} addKeyLight] add new device: ${keyLight.info?.serialNumber} => ${keyLight.info?.displayName}`,
 					'debug',
 				);
-				// console.log(`Device ${newKeyLight.info?.serialNumber} not in exist - add it`);
 				this.devices.push(keyLight);
 				await this.createStates(keyLight);
-				await this.extendForeignObjectAsync('system.adapter.elgato-key-light.0', {});
 			}
 			this.writeLog(
 				`[Adapter v.${this.version} Axios: ${axios.VERSION} addKeyLight] start createStates for ${keyLight.info?.serialNumber}`,
@@ -882,8 +880,6 @@ class ElgatoKeyLight extends utils.Adapter {
 				`[Adapter v.${this.version} Axios: ${axios.VERSION} addKeyLight] start writeState for ${keyLight.info?.serialNumber}`,
 				'debug',
 			);
-
-			// await this.writeState(keyLight);
 			await this.onReady();
 			return {
 				error: false,

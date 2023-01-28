@@ -797,7 +797,6 @@ class ElgatoKeyLight extends utils.Adapter {
         );
         this.devices.push(keyLight);
         await this.createStates(keyLight);
-        await this.extendForeignObjectAsync("system.adapter.elgato-key-light.0", {});
       }
       this.writeLog(
         `[Adapter v.${this.version} Axios: ${import_axios.default.VERSION} addKeyLight] start createStates for ${(_f = keyLight.info) == null ? void 0 : _f.serialNumber}`,
