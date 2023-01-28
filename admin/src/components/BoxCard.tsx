@@ -9,6 +9,11 @@ import {
 	CardContent,
 	CardHeader,
 	CardMedia,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogContentText,
+	DialogTitle,
 	Grid,
 	IconButton,
 	Menu,
@@ -16,14 +21,14 @@ import {
 	TextField,
 	Typography,
 } from '@mui/material';
-import { useGlobals, useI18n, useIoBrokerState, useIoBrokerTheme } from 'iobroker-react/hooks';
+import { useConnection, useGlobals, useI18n, useIoBrokerState, useIoBrokerTheme } from 'iobroker-react/hooks';
 import React, { useEffect, useState } from 'react';
 import { KeyLight } from '../../../src/types/KeyLight';
 import { BrightnessSlider } from './BrightnessSlider';
 import { ColorTemperatureSlider } from './ColorTemperatureSlider';
 import { UpdateButton } from './UpdateButton';
 import { SketchPicker } from 'react-color';
-import { Close as IconClose, PowerSettingsNew as IconPower } from '@mui/icons-material';
+import { Close as IconClose, Delete as DeleteIcon, PowerSettingsNew as IconPower } from '@mui/icons-material';
 
 export interface TabletCardProps {
 	item: KeyLight;
@@ -33,6 +38,7 @@ export interface TabletCardProps {
 export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 	const { translate: t } = useI18n();
 	const [themeName] = useIoBrokerTheme();
+	const connection = useConnection();
 	const { namespace } = useGlobals();
 	const [myColorTemp, myColorTempAck, setMyColorTemp] = useIoBrokerState({
 		id: `${namespace}.${item.info?.serialNumber}.light.lights.0.temperature`,
@@ -49,7 +55,7 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 	const [myName, myNameAck] = useIoBrokerState({
 		id: `${namespace}.${item.info?.serialNumber}.info.displayName`,
 	});
-
+	const [openDialog, setOpenDialog] = React.useState(false);
 	const [colorTemp, setColorTemp] = useState<number>(2900);
 	const [brightness, setBrightness] = useState<number>(10);
 	const [color, setColor] = useState<any>({});
@@ -193,6 +199,37 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 		}
 	};
 
+	const handleClickOpen = () => {
+		setOpenDialog(true);
+	};
+
+	const handleCloseDialog = () => {
+		setOpenDialog(false);
+	};
+
+	const deleteKeyLight = React.useCallback(
+		async (id: string | undefined) => {
+			if (id === undefined) return;
+			const data = {
+				id,
+			};
+			const result = await connection.sendTo(namespace, 'deleteKeyLight', data);
+			if (!result) console.error('delete failed!');
+			if (result.message === 'success') {
+				console.log('delete Success');
+				setOpenDialog(false);
+			}
+		},
+		[connection, namespace],
+	);
+
+	// const handleDelete = async (id) => {
+	// 	console.log('Delete');
+	// 	console.log(id);
+	//
+	// 	await deleteKeyLight(id);
+	// };
+
 	return (
 		<Card
 			sx={{
@@ -263,7 +300,7 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 					borderLeft: '2.5px solid',
 					borderColor: 'black',
 					display: 'flex',
-					justifyContent: 'center',
+					justifyContent: 'space-evenly',
 					alignItems: 'center',
 					flexWrap: 'wrap',
 					alignContent: 'center',
@@ -271,6 +308,26 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 				}}
 			>
 				{`IP: ${item.ip}`}
+				<IconButton aria-label="delete" onClick={handleClickOpen}>
+					<DeleteIcon />
+				</IconButton>
+				<Dialog open={openDialog} onClose={handleCloseDialog}>
+					<DialogTitle id="dialog_DeleteText">{'dialog_Delete'}</DialogTitle>
+					<DialogContent>
+						<DialogContentText id="dialog_DeleteText">
+							{t(
+								'boxCard_dialog_DeleteText',
+								item.info?.displayName || (item.info?.serialNumber as string),
+							)}
+						</DialogContentText>
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={handleCloseDialog}>{t('boxCard_cancel')}</Button>
+						<Button onClick={() => deleteKeyLight(item.info?.serialNumber)} autoFocus>
+							{t('boxCard_delete')}
+						</Button>
+					</DialogActions>
+				</Dialog>
 			</CardContent>
 			<CardActions
 				disableSpacing

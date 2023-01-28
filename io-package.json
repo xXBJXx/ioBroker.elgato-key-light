@@ -73,7 +73,7 @@
 		"connectionType": "local",
 		"dataSource": "poll",
 		"materializeTab": true,
-		"messagebox": false,
+		"messagebox": true,
 		"singleton": true,
 		"stopBeforeUpdate": true,
 		"adminUI": {

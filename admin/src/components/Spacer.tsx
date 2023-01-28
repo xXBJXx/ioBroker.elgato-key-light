@@ -5,6 +5,7 @@ import { Typography } from '@mui/material';
 import React from 'react';
 
 export interface SpacerProps {
+	id: string;
 	variant?:
 		| 'h1'
 		| 'h2'
@@ -25,10 +26,11 @@ export interface SpacerProps {
 	//props
 }
 
-export const Spacer: React.FC<SpacerProps> = ({ variant, align, component, sx, text }): JSX.Element => {
+export const Spacer: React.FC<SpacerProps> = ({ id, variant, align, component, sx, text }): JSX.Element => {
 	return (
 		<React.Fragment>
 			<Typography
+				id={id}
 				component={component ? component : 'div'}
 				variant={variant ? variant : 'h6'}
 				gutterBottom

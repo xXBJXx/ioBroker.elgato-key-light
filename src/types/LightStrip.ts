@@ -1,7 +1,7 @@
 export interface LightStrip {
 	ip: string;
 	port: number;
-	name: string;
+	name?: string;
 	settings?: LightStripSettings;
 	info?: LightStripInfo;
 	light?: LightStripOptions;

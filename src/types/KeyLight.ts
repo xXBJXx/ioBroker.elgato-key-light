@@ -1,7 +1,7 @@
 export interface KeyLight {
 	ip: string;
 	port: number;
-	name: string;
+	name?: string;
 	settings?: KeyLightSettings;
 	info?: KeyLightInfo;
 	light?: KeyLightOptions;
