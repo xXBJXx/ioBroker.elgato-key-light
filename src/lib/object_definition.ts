@@ -354,7 +354,7 @@ export const stateAttrb: StateAttr = {
 		write: true,
 	},
 	adjustBrightness: {
-		name: 'adjust Brightness',
+		name: 'Brightness',
 		desc: 'adjust Brightness of the light',
 		type: 'number',
 		role: 'level.dimmer',

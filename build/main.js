@@ -22,6 +22,8 @@ var import_register = require("source-map-support/register");
 var import_object_definition = require("./lib/object_definition");
 var import_color = require("./lib/color");
 var import_axios = __toESM(require("axios"));
+var import_source_map_support = __toESM(require("source-map-support"));
+import_source_map_support.default.install();
 class ElgatoKeyLight extends utils.Adapter {
   constructor(options = {}) {
     super({
@@ -312,7 +314,7 @@ class ElgatoKeyLight extends utils.Adapter {
     }
   }
   async createStates(device) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J;
     let deviceName = "";
     if (device.info) {
       deviceName = device.info.serialNumber;
@@ -337,7 +339,7 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.info`, {
         type: "channel",
         common: {
-          name: `Info`,
+          name: `${(_a = device.info) == null ? void 0 : _a.displayName} / Info`,
           desc: "Information about the device"
         },
         native: {}
@@ -345,7 +347,7 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.identify`, {
         type: "state",
         common: {
-          name: `${device.info.displayName} Identify`,
+          name: `${device.info.displayName} / Identify`,
           desc: "Identify the device",
           type: "boolean",
           role: "button",
@@ -363,7 +365,7 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.reachable`, {
         type: "state",
         common: {
-          name: `${(_a = device.info) == null ? void 0 : _a.displayName} Reachable`,
+          name: `${(_b = device.info) == null ? void 0 : _b.displayName} / Reachable`,
           desc: "Is the device reachable",
           type: "boolean",
           role: "indicator.reachable",
@@ -376,7 +378,7 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.info.ip`, {
         type: "state",
         common: {
-          name: `${(_b = device.info) == null ? void 0 : _b.displayName} IP Address`,
+          name: `${(_c = device.info) == null ? void 0 : _c.displayName} / IP Address`,
           desc: "IP of the device",
           type: "string",
           role: "info.ip",
@@ -392,7 +394,7 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.info.port`, {
         type: "state",
         common: {
-          name: `${(_c = device.info) == null ? void 0 : _c.displayName} Port`,
+          name: `${(_d = device.info) == null ? void 0 : _d.displayName} / Port`,
           desc: "Port of the device",
           type: "number",
           role: "info.port",
@@ -425,7 +427,7 @@ class ElgatoKeyLight extends utils.Adapter {
             type: "state",
             common: {
               ...common,
-              name: `${(_d = device.info) == null ? void 0 : _d.displayName} ${common.name}`
+              name: `${(_e = device.info) == null ? void 0 : _e.displayName} / ${common.name}`
             },
             native: {
               ip: device.ip,
@@ -441,7 +443,7 @@ class ElgatoKeyLight extends utils.Adapter {
             await this.extendObjectAsync(`${deviceName}.info.${key}`, {
               type: "channel",
               common: {
-                name: "wifi-info",
+                name: `${(_f = device.info) == null ? void 0 : _f.displayName} / wifi-info`,
                 desc: "Information about the wifi"
               },
               native: {}
@@ -452,7 +454,7 @@ class ElgatoKeyLight extends utils.Adapter {
               type: "state",
               common: {
                 ...common,
-                name: `${(_e = device.info) == null ? void 0 : _e.displayName} ${common.name}`
+                name: `${(_g = device.info) == null ? void 0 : _g.displayName} / ${common.name}`
               },
               native: {
                 ip: device.ip,
@@ -472,7 +474,7 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.battery`, {
         type: "channel",
         common: {
-          name: "battery Info",
+          name: `${(_h = device.info) == null ? void 0 : _h.displayName} / battery Info`,
           desc: "battery info of the device"
         },
         native: {}
@@ -484,12 +486,12 @@ class ElgatoKeyLight extends utils.Adapter {
           type: "state",
           common: {
             ...common,
-            name: `${(_f = device.info) == null ? void 0 : _f.displayName} ${common.name}`
+            name: `${(_i = device.info) == null ? void 0 : _i.displayName} / ${common.name}`
           },
           native: {
             ip: device.ip,
             port: device.port,
-            productName: (_g = device.info) == null ? void 0 : _g.productName
+            productName: (_j = device.info) == null ? void 0 : _j.productName
           }
         });
       }
@@ -499,12 +501,20 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.light`, {
         type: "channel",
         common: {
-          name: "Light",
+          name: `${(_k = device.info) == null ? void 0 : _k.displayName} / Light`,
           desc: "Light settings of the device"
         },
         native: {}
       });
       for (const [key] of Object.entries(device.light)) {
+        await this.extendObjectAsync(`${deviceName}.light.${key}`, {
+          type: "channel",
+          common: {
+            name: `${(_l = device.info) == null ? void 0 : _l.displayName} / lights`,
+            desc: "Information about the lights"
+          },
+          native: {}
+        });
         if (key !== `lights`) {
           let common = {
             name: "",
@@ -517,12 +527,12 @@ class ElgatoKeyLight extends utils.Adapter {
             type: "state",
             common: {
               ...common,
-              name: `${(_h = device.info) == null ? void 0 : _h.displayName} ${common.name}`
+              name: `${(_m = device.info) == null ? void 0 : _m.displayName} / ${common.name}`
             },
             native: {
               ip: device.ip,
               port: device.port,
-              productName: (_i = device.info) == null ? void 0 : _i.productName
+              productName: (_n = device.info) == null ? void 0 : _n.productName
             }
           });
           if (common.write) {
@@ -533,7 +543,7 @@ class ElgatoKeyLight extends utils.Adapter {
             await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}`, {
               type: "channel",
               common: {
-                name: "lights",
+                name: `${(_o = device.info) == null ? void 0 : _o.displayName} / lights.${key2}`,
                 desc: "Information about the lights"
               },
               native: {}
@@ -551,12 +561,12 @@ class ElgatoKeyLight extends utils.Adapter {
                   type: "state",
                   common: {
                     ...common,
-                    name: `${(_j = device.info) == null ? void 0 : _j.displayName} ${common.name}`
+                    name: `${(_p = device.info) == null ? void 0 : _p.displayName} / ${common.name}`
                   },
                   native: {
                     ip: device.ip,
                     port: device.port,
-                    productName: (_k = device.info) == null ? void 0 : _k.productName
+                    productName: (_q = device.info) == null ? void 0 : _q.productName
                   }
                 });
                 if (common.write) {
@@ -564,18 +574,18 @@ class ElgatoKeyLight extends utils.Adapter {
                   this.subscribeStates(`${deviceName}.light.${key}.${key2}.hue`);
                   this.subscribeStates(`${deviceName}.light.${key}.${key2}.saturation`);
                 }
-                if (((_l = device.info) == null ? void 0 : _l.productName) === "Elgato Light Strip") {
+                if (((_r = device.info) == null ? void 0 : _r.productName) === "Elgato Light Strip") {
                   const hex = import_object_definition.stateAttrb.hex;
                   await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}.hex`, {
                     type: "state",
                     common: {
                       ...hex,
-                      name: `${(_m = device.info) == null ? void 0 : _m.displayName} ${hex.name}`
+                      name: `${(_s = device.info) == null ? void 0 : _s.displayName} / ${hex.name}`
                     },
                     native: {
                       ip: device.ip,
                       port: device.port,
-                      productName: (_n = device.info) == null ? void 0 : _n.productName
+                      productName: (_t = device.info) == null ? void 0 : _t.productName
                     }
                   });
                   this.subscribeStates(`${deviceName}.light.${key}.${key2}.hex`);
@@ -584,12 +594,12 @@ class ElgatoKeyLight extends utils.Adapter {
                     type: "state",
                     common: {
                       ...rgb,
-                      name: `${(_o = device.info) == null ? void 0 : _o.displayName} ${rgb.name}`
+                      name: `${(_u = device.info) == null ? void 0 : _u.displayName} / ${rgb.name}`
                     },
                     native: {
                       ip: device.ip,
                       port: device.port,
-                      productName: (_p = device.info) == null ? void 0 : _p.productName
+                      productName: (_v = device.info) == null ? void 0 : _v.productName
                     }
                   });
                   this.subscribeStates(`${deviceName}.light.${key}.${key2}.rgb`);
@@ -607,7 +617,7 @@ class ElgatoKeyLight extends utils.Adapter {
       await this.extendObjectAsync(`${deviceName}.settings`, {
         type: "channel",
         common: {
-          name: "Settings",
+          name: `${(_w = device.info) == null ? void 0 : _w.displayName} / Settings`,
           desc: "Settings of the device"
         },
         native: {}
@@ -620,12 +630,12 @@ class ElgatoKeyLight extends utils.Adapter {
             type: "state",
             common: {
               ...common,
-              name: `${(_q = device.info) == null ? void 0 : _q.displayName} ${common.name}`
+              name: `${(_x = device.info) == null ? void 0 : _x.displayName} / ${common.name}`
             },
             native: {
               ip: device.ip,
               port: device.port,
-              productName: (_r = device.info) == null ? void 0 : _r.productName
+              productName: (_y = device.info) == null ? void 0 : _y.productName
             }
           });
           if (common.write) {
@@ -634,11 +644,19 @@ class ElgatoKeyLight extends utils.Adapter {
         } else {
           if (device.settings.battery) {
             for (const [key2] of Object.entries(device.settings.battery)) {
+              await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}`, {
+                type: "channel",
+                common: {
+                  name: `${(_z = device.info) == null ? void 0 : _z.displayName} / Energy Saving`,
+                  desc: "Information about the energy saving"
+                },
+                native: {}
+              });
               if (key2 !== `energySaving`) {
                 await this.extendObjectAsync(`${deviceName}.settings.${key}`, {
                   type: "channel",
                   common: {
-                    name: "battery",
+                    name: `${(_A = device.info) == null ? void 0 : _A.displayName} / battery`,
                     desc: "Information about the battery"
                   },
                   native: {}
@@ -649,12 +667,12 @@ class ElgatoKeyLight extends utils.Adapter {
                   type: "state",
                   common: {
                     ...common,
-                    name: `${(_s = device.info) == null ? void 0 : _s.displayName} ${common.name}`
+                    name: `${(_B = device.info) == null ? void 0 : _B.displayName} / ${common.name}`
                   },
                   native: {
                     ip: device.ip,
                     port: device.port,
-                    productName: (_t = device.info) == null ? void 0 : _t.productName
+                    productName: (_C = device.info) == null ? void 0 : _C.productName
                   }
                 });
                 if (common.write) {
@@ -662,15 +680,15 @@ class ElgatoKeyLight extends utils.Adapter {
                 }
               } else {
                 for (const [key3] of Object.entries(device.settings.battery.energySaving)) {
+                  await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}.${key3}`, {
+                    type: "channel",
+                    common: {
+                      name: `${(_D = device.info) == null ? void 0 : _D.displayName} / adjust Brightness`,
+                      desc: "Information about the adjustBrightness"
+                    },
+                    native: {}
+                  });
                   if (key3 !== `adjustBrightness`) {
-                    await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}.${key3}`, {
-                      type: "channel",
-                      common: {
-                        name: "energySaving",
-                        desc: "Information about the energy saving"
-                      },
-                      native: {}
-                    });
                     let common = {
                       name: "",
                       role: "",
@@ -682,12 +700,12 @@ class ElgatoKeyLight extends utils.Adapter {
                       type: "state",
                       common: {
                         ...common,
-                        name: `${(_u = device.info) == null ? void 0 : _u.displayName} ${common.name}`
+                        name: `${(_E = device.info) == null ? void 0 : _E.displayName} / ${common.name}`
                       },
                       native: {
                         ip: device.ip,
                         port: device.port,
-                        productName: (_v = device.info) == null ? void 0 : _v.productName
+                        productName: (_F = device.info) == null ? void 0 : _F.productName
                       }
                     });
                     if (common.write) {
@@ -711,27 +729,16 @@ class ElgatoKeyLight extends utils.Adapter {
                             type: "state",
                             common: {
                               ...common,
-                              name: `${(_w = device.info) == null ? void 0 : _w.displayName} ${common.name}`
+                              name: `${(_G = device.info) == null ? void 0 : _G.displayName} / ${common.name}`
                             },
                             native: {
                               ip: device.ip,
                               port: device.port,
-                              productName: (_x = device.info) == null ? void 0 : _x.productName
+                              productName: (_H = device.info) == null ? void 0 : _H.productName
                             }
                           }
                         );
                       } else {
-                        await this.extendObjectAsync(
-                          `${deviceName}.settings.${key}.${key2}.${key3}.${key4}`,
-                          {
-                            type: "channel",
-                            common: {
-                              name: "adjustBrightness",
-                              desc: "Information about the adjustBrightness"
-                            },
-                            native: {}
-                          }
-                        );
                         let common = {
                           name: "",
                           role: "",
@@ -745,12 +752,12 @@ class ElgatoKeyLight extends utils.Adapter {
                             type: "state",
                             common: {
                               ...common,
-                              name: `${(_y = device.info) == null ? void 0 : _y.displayName} ${common.name}`
+                              name: `${(_I = device.info) == null ? void 0 : _I.displayName} / ${common.name}`
                             },
                             native: {
                               ip: device.ip,
                               port: device.port,
-                              productName: (_z = device.info) == null ? void 0 : _z.productName
+                              productName: (_J = device.info) == null ? void 0 : _J.productName
                             }
                           }
                         );
