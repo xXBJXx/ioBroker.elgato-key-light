@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "elgato-key-light",
-		"version": "0.0.3",
+		"version": "0.1.0",
 		"news": {
+			"0.1.0": {
+				"en": "removed the Bonjour search, because it did not work properly\nAdding a delete function for devices\nDependency updates\nfeature request #2 added",
+				"de": "die Bonjour-Suche entfernt, da sie nicht richtig funktionierte\nHinzufügen einer Löschfunktion für Geräte\nAktualisierungen der Abhängigkeiten\nFeature Request #2 hinzugefügt",
+				"ru": "удален поиск Bonjour, поскольку он не работал должным образом\nДобавление функции удаления для устройств\nОбновления зависимостей\nдобавлен запрос функции #2",
+				"pt": "removeu a pesquisa Bonjour, porque não funcionava correctamente\nAcrescentar uma função de apagar para dispositivos\nActualizações de dependências\npedido de característica #2 adicionado",
+				"nl": "de Bonjour-zoekopdracht verwijderd, omdat deze niet goed werkte\nEen verwijderfunctie voor apparaten toegevoegd\nUpdates van afhankelijkheden\nfeature request #2 toegevoegd",
+				"fr": "supprimé la recherche Bonjour, car elle ne fonctionnait pas correctement\nAjout d'une fonction de suppression pour les appareils\nMises à jour des dépendances\ndemande de fonctionnalité #2 ajoutée",
+				"it": "rimosso la ricerca Bonjour, perché non funzionava correttamente\nAggiunta una funzione di eliminazione per i dispositivi\nAggiornamenti delle dipendenze\nrichiesta di funzionalità #2 aggiunta",
+				"es": "eliminado la búsqueda Bonjour, porque no funcionaba correctamente\nAgregando una función de eliminación para dispositivos\nActualizaciones de dependencias\nsolicitud de función #2 agregada",
+				"pl": "usunięto wyszukiwanie Bonjour, ponieważ nie działało poprawnie\nDodawanie funkcji usuwania dla urządzeń\nAktualizacje zależności\nżądanie funkcji #2 dodane",
+				"uk": "видалено пошук Bonjour, оскільки він не працював правильно\nДодавання функції видалення для пристроїв\nОновлення залежностей\nзапит функції #2 додано",
+				"zh-cn": "删除了Bonjour搜索，因为它无法正常工作\n添加用于设备的删除功能\n依赖项更新\n功能请求#2已添加"
+			},
 			"0.0.3": {
 				"en": "changed all images to png",
 				"de": "alle Bilder in png geändert",

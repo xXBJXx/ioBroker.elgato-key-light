@@ -85,7 +85,7 @@ The data points are divided into:
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.0 (2023-02-06)
 * (xXBJXx) removed the Bonjour search, because it did not work properly
 * (xXBJXx) Adding a delete function for devices
 * (xXBJXx) Dependency updates
