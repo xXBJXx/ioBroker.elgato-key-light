@@ -10,7 +10,7 @@ import {
 	useIoBrokerObject,
 	useIoBrokerState,
 } from 'iobroker-react/hooks';
-import { IpAddressInput, Logo, NumberInput } from 'iobroker-react';
+import { IpAddressInput, NumberInput, SettingsHeader } from 'iobroker-react';
 import { Alert, Box, Button, Grid, Stack, Typography, useTheme } from '@mui/material';
 import { KeyLight } from '../../src/types/KeyLight';
 import { BoxCard } from './components/BoxCard';
@@ -154,7 +154,7 @@ const Root: React.FC = () => {
 					backgroundColor: theme.palette.background.paper,
 				}}
 			>
-				<Logo
+				<SettingsHeader
 					classes={{
 						logo: 'logo',
 						buttons: 'buttons',

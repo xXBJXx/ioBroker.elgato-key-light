@@ -9,8 +9,8 @@ body:
         **IMPORTANT:** Before submitting:
         - Have you read the documentation?
         Search for existing issues:
-        - [open issues](https://github.com/xXBJXx/ioBroker.hue-sync-box/issues?q=is%3Aopen+is%3Aissue)
-        - [closed issues](https://github.com/xXBJXx/ioBroker.hue-sync-box/issues?q=is%3Aissue+is%3Aclosed)
+        - [open issues](https://github.com/xXBJXx/ioBroker.elgato-key-light/issues?q=is%3Aopen+is%3Aissue)
+        - [closed issues](https://github.com/xXBJXx/ioBroker.elgato-key-light/issues?q=is%3Aissue+is%3Aclosed)
   - type: checkboxes
     attributes:
       label: Is there an existing issue for this?

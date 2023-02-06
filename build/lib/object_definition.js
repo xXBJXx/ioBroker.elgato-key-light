@@ -40,15 +40,6 @@ const stateAttrb = {
     read: true,
     write: false
   },
-  name: {
-    name: "Name",
-    desc: "Name of the device",
-    type: "string",
-    role: "value",
-    def: "",
-    read: true,
-    write: false
-  },
   powerOnBehavior: {
     name: "Power On Behavior",
     desc: "Power On Behavior of the device",

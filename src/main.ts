@@ -106,7 +106,6 @@ class ElgatoKeyLight extends utils.Adapter {
 			deviceName = device.info.serialNumber;
 			await this.setStateAsync(`${deviceName}.info.ip`, { val: device.ip, ack: true });
 			await this.setStateAsync(`${deviceName}.info.port`, { val: device.port, ack: true });
-			await this.setStateAsync(`${deviceName}.info.name`, { val: device.name, ack: true });
 			for (const [key, value] of Object.entries(device.info)) {
 				if (key !== 'wifi-info') {
 					if (key === 'features') {
@@ -137,22 +136,7 @@ class ElgatoKeyLight extends utils.Adapter {
 										val: value,
 										ack: true,
 									});
-									await this.extendObjectAsync(deviceName, {
-										type: 'device',
-										common: {
-											name: device.info.displayName || device.info.productName,
-											// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-											// @ts-ignore
-											statusStates: {
-												onlineId: `${this.namespace}.${deviceName}.reachable`,
-											},
-										},
-										native: {
-											ip: device.ip,
-											port: device.port,
-											device: device,
-										},
-									});
+									await this.createStates(device);
 								}
 							} else {
 								this.writeLog(
@@ -370,7 +354,7 @@ class ElgatoKeyLight extends utils.Adapter {
 			await this.extendObjectAsync(`${deviceName}.info`, {
 				type: 'channel',
 				common: {
-					name: 'Info',
+					name: `Info`,
 					desc: 'Information about the device',
 				},
 				native: {},
@@ -379,7 +363,7 @@ class ElgatoKeyLight extends utils.Adapter {
 			await this.extendObjectAsync(`${deviceName}.identify`, {
 				type: 'state',
 				common: {
-					name: 'Identify',
+					name: `${device.info.displayName} Identify`,
 					desc: 'Identify the device',
 					type: 'boolean',
 					role: 'button',
@@ -398,7 +382,7 @@ class ElgatoKeyLight extends utils.Adapter {
 			await this.extendObjectAsync(`${deviceName}.reachable`, {
 				type: 'state',
 				common: {
-					name: 'Reachable',
+					name: `${device.info?.displayName} Reachable`,
 					desc: 'Is the device reachable',
 					type: 'boolean',
 					role: 'indicator.reachable',
@@ -412,7 +396,7 @@ class ElgatoKeyLight extends utils.Adapter {
 			await this.extendObjectAsync(`${deviceName}.info.ip`, {
 				type: 'state',
 				common: {
-					name: 'IP Address',
+					name: `${device.info?.displayName} IP Address`,
 					desc: 'IP of the device',
 					type: 'string',
 					role: 'info.ip',
@@ -428,26 +412,10 @@ class ElgatoKeyLight extends utils.Adapter {
 			await this.extendObjectAsync(`${deviceName}.info.port`, {
 				type: 'state',
 				common: {
-					name: 'Port',
+					name: `${device.info?.displayName} Port`,
 					desc: 'Port of the device',
 					type: 'number',
 					role: 'info.port',
-					read: true,
-					write: false,
-				},
-				native: {
-					ip: device.ip,
-					port: device.port,
-					productName: device.info.productName,
-				},
-			});
-			await this.extendObjectAsync(`${deviceName}.info.name`, {
-				type: 'state',
-				common: {
-					name: 'Name',
-					desc: 'Name of the device',
-					type: 'string',
-					role: 'info.name',
 					read: true,
 					write: false,
 				},
@@ -477,7 +445,10 @@ class ElgatoKeyLight extends utils.Adapter {
 
 					await this.extendObjectAsync(`${deviceName}.info.${key}`, {
 						type: 'state',
-						common,
+						common: {
+							...common,
+							name: `${device.info?.displayName} ${common.name}`,
+						},
 						native: {
 							ip: device.ip,
 							port: device.port,
@@ -504,7 +475,10 @@ class ElgatoKeyLight extends utils.Adapter {
 
 						await this.extendObjectAsync(`${deviceName}.info.${key}.${key2}`, {
 							type: 'state',
-							common,
+							common: {
+								...common,
+								name: `${device.info?.displayName} ${common.name}`,
+							},
 							native: {
 								ip: device.ip,
 								port: device.port,
@@ -535,7 +509,10 @@ class ElgatoKeyLight extends utils.Adapter {
 				common = stateAttrb[key as keyof typeof stateAttrb];
 				await this.extendObjectAsync(`${deviceName}.battery.${key}`, {
 					type: 'state',
-					common,
+					common: {
+						...common,
+						name: `${device.info?.displayName} ${common.name}`,
+					},
 					native: {
 						ip: device.ip,
 						port: device.port,
@@ -568,7 +545,10 @@ class ElgatoKeyLight extends utils.Adapter {
 
 					await this.extendObjectAsync(`${deviceName}.light.${key}`, {
 						type: 'state',
-						common,
+						common: {
+							...common,
+							name: `${device.info?.displayName} ${common.name}`,
+						},
 						native: {
 							ip: device.ip,
 							port: device.port,
@@ -608,7 +588,10 @@ class ElgatoKeyLight extends utils.Adapter {
 
 								await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}.${key3}`, {
 									type: 'state',
-									common,
+									common: {
+										...common,
+										name: `${device.info?.displayName} ${common.name}`,
+									},
 									native: {
 										ip: device.ip,
 										port: device.port,
@@ -623,9 +606,13 @@ class ElgatoKeyLight extends utils.Adapter {
 								}
 
 								if (device.info?.productName === 'Elgato Light Strip') {
+									const hex = stateAttrb.hex;
 									await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}.hex`, {
 										type: 'state',
-										common: stateAttrb.hex,
+										common: {
+											...hex,
+											name: `${device.info?.displayName} ${hex.name}`,
+										},
 										native: {
 											ip: device.ip,
 											port: device.port,
@@ -633,9 +620,13 @@ class ElgatoKeyLight extends utils.Adapter {
 										},
 									});
 									this.subscribeStates(`${deviceName}.light.${key}.${key2}.hex`);
+									const rgb = stateAttrb.rgb;
 									await this.extendObjectAsync(`${deviceName}.light.${key}.${key2}.rgb`, {
 										type: 'state',
-										common: stateAttrb.rgb,
+										common: {
+											...rgb,
+											name: `${device.info?.displayName} ${rgb.name}`,
+										},
 										native: {
 											ip: device.ip,
 											port: device.port,
@@ -671,7 +662,10 @@ class ElgatoKeyLight extends utils.Adapter {
 
 					await this.extendObjectAsync(`${deviceName}.settings.${key}`, {
 						type: 'state',
-						common,
+						common: {
+							...common,
+							name: `${device.info?.displayName} ${common.name}`,
+						},
 						native: {
 							ip: device.ip,
 							port: device.port,
@@ -701,7 +695,10 @@ class ElgatoKeyLight extends utils.Adapter {
 
 								await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}`, {
 									type: 'state',
-									common,
+									common: {
+										...common,
+										name: `${device.info?.displayName} ${common.name}`,
+									},
 									native: {
 										ip: device.ip,
 										port: device.port,
@@ -735,7 +732,10 @@ class ElgatoKeyLight extends utils.Adapter {
 
 										await this.extendObjectAsync(`${deviceName}.settings.${key}.${key2}.${key3}`, {
 											type: 'state',
-											common,
+											common: {
+												...common,
+												name: `${device.info?.displayName} ${common.name}`,
+											},
 											native: {
 												ip: device.ip,
 												port: device.port,
@@ -764,7 +764,10 @@ class ElgatoKeyLight extends utils.Adapter {
 													`${deviceName}.settings.${key}.${key2}.${key3}.${key4}`,
 													{
 														type: 'state',
-														common,
+														common: {
+															...common,
+															name: `${device.info?.displayName} ${common.name}`,
+														},
 														native: {
 															ip: device.ip,
 															port: device.port,
@@ -796,7 +799,10 @@ class ElgatoKeyLight extends utils.Adapter {
 													`${deviceName}.settings.${key}.${key2}.${key3}.${key4}`,
 													{
 														type: 'state',
-														common,
+														common: {
+															...common,
+															name: `${device.info?.displayName} ${common.name}`,
+														},
 														native: {
 															ip: device.ip,
 															port: device.port,

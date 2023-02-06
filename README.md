@@ -88,6 +88,8 @@ The data points are divided into:
 ### **WORK IN PROGRESS**
 * (xXBJXx) removed the Bonjour search, because it did not work properly
 * (xXBJXx) Adding a delete function for devices
+* (xXBJXx) Dependency updates
+* (xXBJXx) feature request [#2](https://github.com/xXBJXx/ioBroker.elgato-key-light/issues/2) added
 
 ### 0.0.3 (2023-01-22)
 * (xXBJXx) changed all images to png
