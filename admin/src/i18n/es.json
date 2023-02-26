@@ -5,7 +5,6 @@
   "boxCard_cancel": "Cancelar",
   "boxCard_delete": "borrar",
   "boxCard_dialog_DeleteText": "¿Realmente quieren borrar %s?",
-  "boxCard_update": "Actualización",
   "tab_adapterNotAlive": "El adaptador no está encendido. Encienda primero el adaptador.",
   "tab_addDevices": "Añadir dispositivo",
   "tab_devices": "dispositivos",

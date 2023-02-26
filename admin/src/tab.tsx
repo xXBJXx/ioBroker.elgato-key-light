@@ -4,6 +4,7 @@ import type { Translations } from 'iobroker-react/i18n';
 import { IoBrokerApp } from 'iobroker-react/app';
 import {
 	useAdapter,
+	useArray,
 	useConnection,
 	useGlobals,
 	useI18n,
@@ -17,7 +18,6 @@ import { BoxCard } from './components/BoxCard';
 import { orange, red } from '@mui/material/colors';
 import { SaveButton } from './components/SaveButton';
 import { Spacer } from './components/Spacer';
-// import { AddDeviceModal } from './modal/AddDeviceModal';
 // Components are imported here
 
 // Load your translations
@@ -42,16 +42,15 @@ const Root: React.FC = () => {
 	const { namespace } = useGlobals();
 	const [ipAddress, setIpAddress] = React.useState('');
 	const [ipValid, setIpValid] = React.useState(false);
-
 	const [myObject, extendMyObject] = useIoBrokerObject(`system.adapter.${namespace}`);
 	const [myState] = useIoBrokerState({
 		id: 'elgato-key-light.0.info.connections',
 	});
-	const [devices, setDevices] = React.useState<KeyLight[]>([]);
 	const [interval, setInterval] = React.useState(60);
 	const [changed, setChanged] = useState(false);
 	const [error, setError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
+	const { array: devices, set: setDevices } = useArray<KeyLight>([]);
 
 	// call all devices
 	useEffect(() => {

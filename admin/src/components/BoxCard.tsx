@@ -21,12 +21,19 @@ import {
 	TextField,
 	Typography,
 } from '@mui/material';
-import { useConnection, useGlobals, useI18n, useIoBrokerState, useIoBrokerTheme } from 'iobroker-react/hooks';
+import {
+	useConnection,
+	useGlobals,
+	useI18n,
+	useIoBrokerState,
+	useIoBrokerTheme,
+	useTimeout,
+} from 'iobroker-react/hooks';
 import React, { useEffect, useState } from 'react';
 import { KeyLight } from '../../../src/types/KeyLight';
 import { BrightnessSlider } from './BrightnessSlider';
 import { ColorTemperatureSlider } from './ColorTemperatureSlider';
-import { UpdateButton } from './UpdateButton';
+// import { UpdateButton } from './UpdateButton';
 import { SketchPicker } from 'react-color';
 import { Close as IconClose, Delete as DeleteIcon, PowerSettingsNew as IconPower } from '@mui/icons-material';
 
@@ -65,6 +72,27 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 	const [onOff, setOnOff] = useState<boolean>(false);
 	const [name, setName] = useState<string>('');
 
+	const { clear, reset } = useTimeout(async () => {
+		if (item.info?.productName === 'Elgato Light Strip') {
+			if (myRGB !== rgb) {
+				await setMyRGB(rgb);
+			}
+			if (myBrightness !== brightness) {
+				await setMyBrightness(brightness);
+			}
+			console.log('Updating Light Strip');
+		} else {
+			console.log('Updating Key Light');
+			// check if the states have changed
+			if (myColorTemp !== colorTemp) {
+				await setMyColorTemp(colorTemp);
+			}
+			if (myBrightness !== brightness) {
+				await setMyBrightness(brightness);
+			}
+		}
+	}, 1500);
+	clear();
 	// Name change
 	useEffect(() => {
 		if (myName && myNameAck) {
@@ -75,7 +103,6 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 	// Color Temperature
 	useEffect(() => {
 		if (myColorTemp && myColorTempAck) {
-			// console.log('ColorTemp set to', myColorTemp);
 			setColorTemp(myColorTemp as number);
 		}
 	}, [myColorTemp]);
@@ -83,7 +110,6 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 	// Brightness
 	useEffect(() => {
 		if (myBrightness && myBrightnessAck) {
-			// console.log('Brightness set to ', myBrightness);
 			setBrightness(myBrightness as number);
 		}
 	}, [myBrightness]);
@@ -91,7 +117,6 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 	//rgb
 	useEffect(() => {
 		if (myRGB && myRGBAck) {
-			// console.log('RGB set to ', myRGB);
 			let rgbArray: string[] = [];
 			if (typeof myRGB === 'string') {
 				rgbArray = myRGB.split(',');
@@ -109,13 +134,13 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 	//onOff
 	useEffect(() => {
 		if (myOn && myOnAck) {
-			// console.log('OnOff set to ', myOn);
 			setOnOff(myOn as boolean);
 		}
 	}, [myOn]);
 
 	const handleColorTemperature = (value: number) => {
 		setColorTemp(value);
+		reset();
 	};
 
 	const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -130,10 +155,12 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 		const rgb = `${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}`;
 		setRGB(rgb);
 		setColor(color);
+		reset();
 	};
 
 	const handleBrightness = (value: number) => {
 		setBrightness(value);
+		reset();
 	};
 
 	const handleOnOff = async () => {
@@ -145,29 +172,6 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 			setOnOff(true);
 			console.log('Turning on');
 			await setMyOn(true);
-		}
-	};
-
-	const updateState = async () => {
-		if (item.info?.productName === 'Elgato Light Strip') {
-			if (myRGB !== rgb) {
-				await setMyRGB(rgb);
-			}
-			if (myBrightness !== brightness) {
-				await setMyBrightness(brightness);
-			}
-			console.log('Updating Light Strip');
-		} else {
-			console.log('Updating Key Light');
-			// check if the states have changed
-			if (myColorTemp !== colorTemp) {
-				// console.log('Update ColorTemp');
-				await setMyColorTemp(colorTemp);
-			}
-			if (myBrightness !== brightness) {
-				// console.log('Update Brightness');
-				await setMyBrightness(brightness);
-			}
 		}
 	};
 
@@ -222,13 +226,6 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 		},
 		[connection, namespace],
 	);
-
-	// const handleDelete = async (id) => {
-	// 	console.log('Delete');
-	// 	console.log(id);
-	//
-	// 	await deleteKeyLight(id);
-	// };
 
 	return (
 		<Card
@@ -494,9 +491,6 @@ export const BoxCard: React.FC<TabletCardProps> = ({ item }): JSX.Element => {
 								/>
 							)}
 						</Button>
-						<Grid item xs={12}>
-							<UpdateButton onClick={updateState} lable={t('boxCard_update')} />
-						</Grid>
 					</Grid>
 				</React.Fragment>
 			</CardActions>

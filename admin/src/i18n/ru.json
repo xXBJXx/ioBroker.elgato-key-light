@@ -5,7 +5,6 @@
   "boxCard_cancel": "Отмена",
   "boxCard_delete": "удалить",
   "boxCard_dialog_DeleteText": "Действительно ли они хотят удалить %s?",
-  "boxCard_update": "Обновление",
   "tab_adapterNotAlive": "Адаптер не включен. Пожалуйста, сначала включите адаптер.",
   "tab_addDevices": "Добавить устройство",
   "tab_devices": "устройства",

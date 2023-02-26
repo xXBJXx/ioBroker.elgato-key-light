@@ -5,7 +5,6 @@
   "boxCard_cancel": "Cancel",
   "boxCard_delete": "delete",
   "boxCard_dialog_DeleteText": "Do they really want to delete %s?",
-  "boxCard_update": "Update",
   "tab_adapterNotAlive": "Adapter is not switched on. Please turn on the adapter first.",
   "tab_addDevices": "Add device",
   "tab_devices": "Devices",

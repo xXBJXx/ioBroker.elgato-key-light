@@ -5,7 +5,6 @@
   "boxCard_cancel": "Annuler",
   "boxCard_delete": "supprimer",
   "boxCard_dialog_DeleteText": "Veulent-ils vraiment supprimer %s ?",
-  "boxCard_update": "Mise à jour",
   "tab_adapterNotAlive": "L'adaptateur n'est pas allumé. Veuillez d'abord allumer l'adaptateur.",
   "tab_addDevices": "Ajouter un dispositif",
   "tab_devices": "dispositifs",
