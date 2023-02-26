@@ -32,10 +32,6 @@ The adapter supports the following functions:
   and [Elgato Key Light mini](https://www.elgato.com/de/key-light-mini) available)
 * Color ⇨ (only available with [Elgato Light Strip](https://www.elgato.com/de/light-strip))
 
-### How do I add a Key Light?
-**The devices are automatically detected through multicast (mDNS) and can then be controlled through the data points and UI.
-There is no provision for adding them manually at the moment.**
-
 
 ### Adapter UI
 A classic adapter UI under instances does not exist.\
@@ -45,14 +41,14 @@ A classic adapter UI under instances does not exist.\
 What can be done in the UI?
 * No. 1 set the polling interval for the adapter (default: 60 seconds).
   after changing the interval, the adapter must be restarted, this is done using the Save button.
-* No. 2 set the color temperature for all key lights (2900K to 7000K)
-* No. 3 set the brightness for all Key Lights (0% to 100%)
-* No. 4 set the color for from the Light Strips\
+* No. 2 add a new device to the adapter.
+* No. 3 set the color temperature for all key lights (2900K to 7000K)
+* No. 4 set the brightness for all Key Lights (0% to 100%)
+* No. 5 set the color for from the Light Strips\
   ![Adapter UI](admin/media/ColorPicker.png)
-* No. 5 switch the lights on and off
+* No. 6 switch the lights on and off
 
-After the changes of No. 2, No. 3 and No. 4 you have to click on the Refresh button to apply changes, the adapter will be
-by not restarting.
+**when changing No. 3, No. 4 and No. 5, the change will be executed after 1.5 seconds.**
 
 ### Warning
 **Please do not access the data points too often, otherwise the devices will not be accessible for a few seconds.**
@@ -85,6 +81,9 @@ The data points are divided into:
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+* (xXBJXx) updated dependencies
+* (xXBJXx) Updating the UI to the new functions of the iobroker-react library
 ### 0.1.0 (2023-02-06)
 * (xXBJXx) removed the Bonjour search, because it did not work properly
 * (xXBJXx) Adding a delete function for devices
