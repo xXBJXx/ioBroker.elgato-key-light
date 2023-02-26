@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "elgato-key-light",
-		"version": "0.1.0",
+		"version": "0.2.0",
 		"news": {
+			"0.2.0": {
+				"en": "updated dependencies\nUpdating the UI to the new functions of the iobroker-react library",
+				"de": "aktualisierte Abhängigkeiten\nAktualisierung der Benutzeroberfläche auf die neuen Funktionen der iobroker-react-Bibliothek",
+				"ru": "обновленные зависимости\nОбновление пользовательского интерфейса с учетом новых функций библиотеки iobroker-react",
+				"pt": "dependências actualizadas\nActualização da IU para as novas funções da biblioteca iobroker-react",
+				"nl": "bijgewerkte afhankelijkheden\nBijwerken van de UI naar de nieuwe functies van de iobroker-react bibliotheek",
+				"fr": "Mise à jour des dépendances\nMise à jour de l'interface utilisateur vers les nouvelles fonctions de la bibliothèque iobroker-react",
+				"it": "dipendenze aggiornate\nAggiornamento dell'interfaccia utente alle nuove funzioni della libreria iobroker-react",
+				"es": "dependencias actualizadas\nActualización de la interfaz de usuario a las nuevas funciones de la biblioteca iobroker-react",
+				"pl": "zaktualizowane zależności\nAktualizacja UI do nowych funkcji biblioteki iobroker-react",
+				"uk": "оновлені залежності\nОновлення інтерфейсу користувача до нових функцій бібліотеки iobroker-react",
+				"zh-cn": "更新依赖性\n根据iobroker-react库的新功能更新用户界面"
+			},
 			"0.1.0": {
 				"en": "removed the Bonjour search, because it did not work properly\nAdding a delete function for devices\nDependency updates\nfeature request #2 added",
 				"de": "die Bonjour-Suche entfernt, da sie nicht richtig funktionierte\nHinzufügen einer Löschfunktion für Geräte\nAktualisierungen der Abhängigkeiten\nFeature Request #2 hinzugefügt",
