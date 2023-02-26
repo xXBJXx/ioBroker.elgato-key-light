@@ -54,7 +54,6 @@ class ElgatoKeyLight extends utils.Adapter {
         await this.createStates(devices[devicesKey].native.device);
       }
       this.writeLog(`[Adapter v.${this.version} onReady] all devices: ${this.devices.length}`, "debug");
-      console.log("devices", this.devices);
     } else {
       this.writeLog(`[Adapter v.${this.version} onReady] no devices found`, "debug");
       await this.setStateAsync("info.connections", { val: JSON.stringify([]), ack: true });
@@ -85,8 +84,7 @@ class ElgatoKeyLight extends utils.Adapter {
     }, this.interval);
   }
   async writeState(device) {
-    var _a, _b, _c, _d, _e;
-    console.log((_a = device.info) == null ? void 0 : _a.displayName);
+    var _a, _b, _c, _d;
     if (!device)
       return;
     let deviceName = "";
@@ -113,7 +111,7 @@ class ElgatoKeyLight extends utils.Adapter {
               }
             );
             if (deviceConfig) {
-              if (((_b = deviceConfig.info) == null ? void 0 : _b.displayName) !== value) {
+              if (((_a = deviceConfig.info) == null ? void 0 : _a.displayName) !== value) {
                 const index = this.devices.findIndex(
                   (element) => {
                     var _a2, _b2;
@@ -123,7 +121,7 @@ class ElgatoKeyLight extends utils.Adapter {
                 if (index !== -1) {
                   this.devices[index].info.displayName = value;
                   this.writeLog(
-                    `[Adapter v.${this.version} writeState] Change name of ${(_c = device.info) == null ? void 0 : _c.displayName} to ${value}`,
+                    `[Adapter v.${this.version} writeState] Change name of ${(_b = device.info) == null ? void 0 : _b.displayName} to ${value}`,
                     "debug"
                   );
                   await this.setStateAsync(`${deviceName}.info.${key}`, {
@@ -134,7 +132,7 @@ class ElgatoKeyLight extends utils.Adapter {
                 }
               } else {
                 this.writeLog(
-                  `[Adapter v.${this.version} writeState] Name of ${(_d = device.info) == null ? void 0 : _d.displayName} is ${value}`,
+                  `[Adapter v.${this.version} writeState] Name of ${(_c = device.info) == null ? void 0 : _c.displayName} is ${value}`,
                   "debug"
                 );
                 await this.setStateAsync(`${deviceName}.info.${key}`, { val: value, ack: true });
@@ -280,7 +278,7 @@ class ElgatoKeyLight extends utils.Adapter {
                   val: value3,
                   ack: true
                 });
-                if (((_e = device.info) == null ? void 0 : _e.productName) === "Elgato Light Strip") {
+                if (((_d = device.info) == null ? void 0 : _d.productName) === "Elgato Light Strip") {
                   const stripDevice = device.light;
                   let hue = stripDevice.lights[0].hue;
                   let sat = stripDevice.lights[0].saturation;
@@ -604,8 +602,6 @@ class ElgatoKeyLight extends utils.Adapter {
                   });
                   this.subscribeStates(`${deviceName}.light.${key}.${key2}.rgb`);
                 }
-              } else {
-                console.log(`key3: ${key3}`);
               }
             }
           }
@@ -926,16 +922,12 @@ class ElgatoKeyLight extends utils.Adapter {
       const result = await import_axios.default.put(`http://${device.ip}:${device.port}/elgato/lights`, options);
       if (result.status === 200) {
         const resultData = result.data;
-        console.log(resultData);
         this.writeLog(
           `[Adapter v.${this.version} Axios: ${import_axios.default.VERSION} updateLightOptions] on for ${device.ip} set to ${JSON.stringify(options)}`,
           "debug"
         );
         return resultData;
       }
-      console.log(
-        `[Axios: ${import_axios.default.VERSION} updateLightOptions] on for ${device.ip} set to ${JSON.stringify(options)}`
-      );
       this.writeLog(
         `[Adapter v.${this.version} Axios: ${import_axios.default.VERSION} updateLightOptions] on for ${device.ip} set to ${JSON.stringify(options)}`,
         "debug"
@@ -974,9 +966,6 @@ class ElgatoKeyLight extends utils.Adapter {
   async updateLightInfo(device, options) {
     try {
       const result = await import_axios.default.put(`http://${device.ip}:${device.port}/elgato/accessory-info`, options);
-      console.log(
-        `[Adapter v.${this.version} Axios: ${import_axios.default.VERSION} updateLightInfo] displayName for ${device.ip} set to ${options}`
-      );
       this.writeLog(
         `[Adapter v.${this.version} Axios: ${import_axios.default.VERSION} updateLightInfo] displayName for ${device.ip} set to ${options}`,
         "debug"
@@ -1081,7 +1070,6 @@ class ElgatoKeyLight extends utils.Adapter {
                       }
                     ]
                   };
-                  console.log(`scene Mode`);
                 } else {
                   options = {
                     lights: [
@@ -1090,7 +1078,6 @@ class ElgatoKeyLight extends utils.Adapter {
                       }
                     ]
                   };
-                  console.log(`brightness Mode`);
                 }
               }
             } else {
@@ -1298,10 +1285,7 @@ class ElgatoKeyLight extends utils.Adapter {
           ip: device.ip,
           port: 9123
         };
-        console.log(device);
-        console.log(data);
         const result = await this.addKeyLight(data);
-        console.log(result);
         if (result.message === "success") {
           this.sendTo(obj.from, obj.command, result, obj.callback);
         } else {
@@ -1310,15 +1294,12 @@ class ElgatoKeyLight extends utils.Adapter {
       }
       if (obj.command === "deleteKeyLight") {
         const device = obj.message;
-        console.log(device);
         const index = this.devices.findIndex((d) => {
           var _a;
           return ((_a = d.info) == null ? void 0 : _a.serialNumber) === device.id;
         });
-        console.log(index);
         if (index > -1) {
           this.devices.splice(index, 1);
-          console.log(this.devices);
           this.writeLog(`[Adapter v.${this.version} onMessage] delete device ${device.id}`, "debug");
           await this.delObjectAsync(`${this.namespace}.${device.id}`, { recursive: true });
           await this.onReady();

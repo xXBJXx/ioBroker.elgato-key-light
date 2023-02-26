@@ -59,7 +59,7 @@ class ElgatoKeyLight extends utils.Adapter {
 				await this.createStates(devices[devicesKey].native.device);
 			}
 			this.writeLog(`[Adapter v.${this.version} onReady] all devices: ${this.devices.length}`, 'debug');
-			console.log('devices', this.devices);
+			// console.log('devices', this.devices);
 		} else {
 			this.writeLog(`[Adapter v.${this.version} onReady] no devices found`, 'debug');
 			await this.setStateAsync('info.connections', { val: JSON.stringify([]), ack: true });
@@ -95,8 +95,6 @@ class ElgatoKeyLight extends utils.Adapter {
 	}
 
 	private async writeState(device: KeyLight): Promise<void> {
-		console.log(device.info?.displayName);
-		// }
 		if (!device) return;
 		let deviceName = '';
 		// write the state of the Key Light
@@ -645,8 +643,6 @@ class ElgatoKeyLight extends utils.Adapter {
 									});
 									this.subscribeStates(`${deviceName}.light.${key}.${key2}.rgb`);
 								}
-							} else {
-								console.log(`key3: ${key3}`);
 							}
 						}
 					}
@@ -839,7 +835,6 @@ class ElgatoKeyLight extends utils.Adapter {
 		// create the states on the key of device.battery
 
 		await this.setStateAsync(`${deviceName}.reachable`, true, true);
-		// const values = ;
 		await this.setStateAsync('info.connections', { val: JSON.stringify(this.devices), ack: true });
 	}
 
@@ -1014,7 +1009,7 @@ class ElgatoKeyLight extends utils.Adapter {
 			const result = await axios.put(`http://${device.ip}:${device.port}/elgato/lights`, options);
 			if (result.status === 200) {
 				const resultData = result.data as KeyLightOptions;
-				console.log(resultData);
+				// console.log(resultData);
 				this.writeLog(
 					`[Adapter v.${this.version} Axios: ${axios.VERSION} updateLightOptions] on for ${
 						device.ip
@@ -1023,9 +1018,9 @@ class ElgatoKeyLight extends utils.Adapter {
 				);
 				return resultData;
 			}
-			console.log(
-				`[Axios: ${axios.VERSION} updateLightOptions] on for ${device.ip} set to ${JSON.stringify(options)}`,
-			);
+			// console.log(
+			// 	`[Axios: ${axios.VERSION} updateLightOptions] on for ${device.ip} set to ${JSON.stringify(options)}`,
+			// );
 			this.writeLog(
 				`[Adapter v.${this.version} Axios: ${axios.VERSION} updateLightOptions] on for ${
 					device.ip
@@ -1070,9 +1065,9 @@ class ElgatoKeyLight extends utils.Adapter {
 	public async updateLightInfo(device: KeyLight, options: KeyLightInfo): Promise<KeyLightInfo | undefined> {
 		try {
 			const result = await axios.put(`http://${device.ip}:${device.port}/elgato/accessory-info`, options);
-			console.log(
-				`[Adapter v.${this.version} Axios: ${axios.VERSION} updateLightInfo] displayName for ${device.ip} set to ${options}`,
-			);
+			// console.log(
+			// 	`[Adapter v.${this.version} Axios: ${axios.VERSION} updateLightInfo] displayName for ${device.ip} set to ${options}`,
+			// );
 			this.writeLog(
 				`[Adapter v.${this.version} Axios: ${axios.VERSION} updateLightInfo] displayName for ${device.ip} set to ${options}`,
 				'debug',
@@ -1173,10 +1168,10 @@ class ElgatoKeyLight extends utils.Adapter {
 						);
 						let options = {};
 						if (native.productName === 'Elgato Light Strip') {
-							// suche in this.requestObjects nach dem passenden Objekt
+							// search in this.requestObjects for the matching object
 							const requestObject = this.requestObject.find((obj) => obj.ip === native.ip) as LightStrip;
 							if (requestObject) {
-								// prüfe ob in requestObject.light.lights[0] die property scene vorhanden ist
+								// check if in requestObject.light.lights[0] the property scene is present
 								if (requestObject.light?.lights[0].scene) {
 									options = {
 										lights: [
@@ -1190,7 +1185,7 @@ class ElgatoKeyLight extends utils.Adapter {
 											},
 										],
 									};
-									console.log(`scene Mode`);
+									// console.log(`scene Mode`);
 								} else {
 									options = {
 										lights: [
@@ -1199,7 +1194,7 @@ class ElgatoKeyLight extends utils.Adapter {
 											},
 										],
 									};
-									console.log(`brightness Mode`);
+									// console.log(`brightness Mode`);
 								}
 							}
 						} else {
@@ -1421,10 +1416,7 @@ class ElgatoKeyLight extends utils.Adapter {
 					ip: device.ip,
 					port: 9123,
 				};
-				console.log(device);
-				console.log(data);
 				const result = await this.addKeyLight(data);
-				console.log(result);
 
 				if (result.message === 'success') {
 					this.sendTo(obj.from, obj.command, result, obj.callback);
@@ -1434,12 +1426,9 @@ class ElgatoKeyLight extends utils.Adapter {
 			}
 			if (obj.command === 'deleteKeyLight') {
 				const device = obj.message as { id: string };
-				console.log(device);
 				const index = this.devices.findIndex((d) => d.info?.serialNumber === device.id);
-				console.log(index);
 				if (index > -1) {
 					this.devices.splice(index, 1);
-					console.log(this.devices);
 					this.writeLog(`[Adapter v.${this.version} onMessage] delete device ${device.id}`, 'debug');
 					await this.delObjectAsync(`${this.namespace}.${device.id}`, { recursive: true });
 					await this.onReady();
