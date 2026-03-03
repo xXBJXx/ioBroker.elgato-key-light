@@ -19,7 +19,7 @@
     "url": "https://github.com/iobroker-community-adapters/ioBroker.elgato-key-light.git"
   },
   "engines": {
-    "node": ">= 18"
+    "node": ">= "
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.1.4",
