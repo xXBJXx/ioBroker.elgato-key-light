@@ -117,7 +117,7 @@ The data points are divided into:
 ## License
 MIT License
 
-Copyright (c) 2024 iobroker-community-adapters <mcm57@gmx.at>
+Copyright (c) 2024-2026 iobroker-community-adapters <mcm57@gmx.at>
 Copyright (c) 2023 xXBJXx <issi.dev.iobroker@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
