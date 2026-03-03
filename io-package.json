@@ -169,8 +169,7 @@
         "uk": "Elgato Key Light",
         "zh-cn": "Elgato Key Light"
       },
-      "link": "",
-      "fa-icon": "info"
+      "link": ""
     },
     "eraseOnUpload": true,
     "dependencies": [
