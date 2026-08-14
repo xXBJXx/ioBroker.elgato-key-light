@@ -22,6 +22,9 @@ For more details and for information on how to disable error reporting, see.
 [Sentry Plugin Documentation](https://github.com/ioBroker/plugin-sentry#plugin-sentry)! Sentry reports are used starting with js-controller 3.0
 are used.
 
+### Credits
+This adapter would not have been possible without the great work of @xXBJXx (https://github.com/xXBJXx), who created this adapter and will hopefully maintain it again in the future.
+
 ### Description
 This adapter allows you to control [Elgato Key Lights](https://www.elgato.com/de/key-light) via ioBroker.\
 The adapter supports the following functions:
@@ -81,6 +84,26 @@ The data points are divided into:
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+- (mcm1957) Adapetr requires node.js >= 20 now
+- (copilot) Adapter requires admin >= 7.7.22 now
+- (copilot) Adapter requires js-controller >= 6.0.11 now
+- (mcm1957) Dependencies have been updated
+
+### 1.1.0 (2024-04-14)
+* (mcm1957) Adapter requires node.js 18 and js-controller >= 5 now
+* (mcm1957) Dependencies have been updated
+
+### 1.0.1 (2024-01-18)
+* (mcm1957) Writing states now requires ack flag to be false.
+* (mcm1957) Small adaptions to solve review issues have been applied.
+
+### 1.0.0 (2024-01-18)
+* (mcm1957) Adapter requires node.js 18 or newer now
+* (mcm1957) Adapter has been moved into iobroker-community-adapters area
+* (mcm1957) Dependencies have been updated
+
 ### 0.2.0 (2023-02-26)
 * (xXBJXx) updated dependencies
 * (xXBJXx) Updating the UI to the new functions of the iobroker-react library
@@ -91,15 +114,10 @@ The data points are divided into:
 * (xXBJXx) Dependency updates
 * (xXBJXx) feature request [#2](https://github.com/xXBJXx/ioBroker.elgato-key-light/issues/2) added
 
-### 0.0.3 (2023-01-22)
-* (xXBJXx) changed all images to png
-
-### 0.0.2 (2023-01-22)
-* (xXBJXx) first release
-
 ## License
 MIT License
 
+Copyright (c) 2024-2026 iobroker-community-adapters <mcm57@gmx.at>
 Copyright (c) 2023 xXBJXx <issi.dev.iobroker@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -118,4 +136,5 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+
 SOFTWARE.
