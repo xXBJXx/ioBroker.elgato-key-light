@@ -1,140 +1,89 @@
 ![Logo](admin/elgato-key-light.png)
+
 # ioBroker.elgato-key-light
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.elgato-key-light.svg)](https://www.npmjs.com/package/iobroker.elgato-key-light)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.elgato-key-light.svg)](https://www.npmjs.com/package/iobroker.elgato-key-light)
-![Number of Installations](https://iobroker.live/badges/elgato-key-light-installed.svg)
-![Current version in stable repository](https://iobroker.live/badges/elgato-key-light-stable.svg)
+![Installations](https://iobroker.live/badges/elgato-key-light-installed.svg)
+![Stable](https://iobroker.live/badges/elgato-key-light-stable.svg)
 
-**Tests:** ![Test and Release](https://github.com/xXBJXx/ioBroker.elgato-key-light/workflows/Test%20and%20Release/badge.svg)
+Local, cloud-free control of Elgato Wi-Fi lights from ioBroker. The adapter discovers `_elg._tcp.local.` services with Bonjour/mDNS and also supports manual private IP or local hostname configuration.
 
-## elgato-key-light adapter for ioBroker
+## Requirements
 
-### DISCLAIMER
+- Node.js 22.18 or newer
+- js-controller 7.2.2 or newer
+- Admin 7.8.23 or newer
+- ioBroker and the lights must be able to reach each other on the local network (normally TCP port 9123 and multicast DNS UDP 5353)
 
-All product and company names or logos are Trademarks™ or Registered® Trademarks of their respective owners. Their use does not imply any
-Affiliation or endorsement by them or associated affiliates! This personal project is being pursued on a recreational basis and
-Has no business objectives. **Elgato** is a trademark of **Corsair GmbH**.
+## Supported capabilities
 
-### Sentry
-**This adapter uses Sentry libraries to automatically report exceptions and code errors to the developers.**\
-For more details and for information on how to disable error reporting, see.
-[Sentry Plugin Documentation](https://github.com/ioBroker/plugin-sentry#plugin-sentry)! Sentry reports are used starting with js-controller 3.0
-are used.
+Controls are created from the device response, not from a hard-coded product name.
 
-### Credits
-This adapter would not have been possible without the great work of @xXBJXx (https://github.com/xXBJXx), who created this adapter and will hopefully maintain it again in the future.
+| Capability | Key Light / Air / Ring | Key Light Mini | Light Strip |
+| --- | --- | --- | --- |
+| Power and brightness | Yes | Yes | Yes |
+| Color temperature | Yes | Yes | If reported |
+| Hue, saturation and RGB | If reported | If reported | Yes |
+| Battery and charging data | No | Yes | No |
+| Studio mode / battery bypass | No | When reported | No |
+| Identify | Yes | Yes | Yes |
 
-### Description
-This adapter allows you to control [Elgato Key Lights](https://www.elgato.com/de/key-light) via ioBroker.\
-The adapter supports the following functions:
-* Power on/off.
-* Brightness ⇨ (available on all Key Lights).
-* Color temperature ⇨ (only available with [Elgato Key Light](https://www.elgato.com/de/key-light), [Elgato Key Light Air](https://www.elgato.com/de/key-light-air),
-  [Elgato Ring Light](https://www.elgato.com/de/ring-light)
-  and [Elgato Key Light mini](https://www.elgato.com/de/key-light-mini) available)
-* Color ⇨ (only available with [Elgato Light Strip](https://www.elgato.com/de/light-strip))
+Light Strip scenes/effects and restart are deliberately not exposed because their behavior has not yet been verified across the supported hardware and firmware matrix.
 
+## Setup
 
-### Adapter UI
-A classic adapter UI under instances does not exist.\
-![Adapter UI](admin/media/instances.png)
-![Adapter UI](admin/media/elgato-key-light_UI.png)
+Open the adapter configuration page. You can scan the network and add a result, or enter a private IP/`.local` hostname and port manually. Discovery is convenient, but manual setup remains available for VLANs or networks that block multicast. Save the configuration to restart the instance with the new device list.
 
-What can be done in the UI?
-* No. 1 set the polling interval for the adapter (default: 60 seconds).
-  after changing the interval, the adapter must be restarted, this is done using the Save button.
-* No. 2 add a new device to the adapter.
-* No. 3 set the color temperature for all key lights (2900K to 7000K)
-* No. 4 set the brightness for all Key Lights (0% to 100%)
-* No. 5 set the color for from the Light Strips\
-  ![Adapter UI](admin/media/ColorPicker.png)
-* No. 6 switch the lights on and off
+The separate adapter tab is the responsive control dashboard. It only shows controls supported by each device and includes reachability, latency, battery information, identify, reconnect and sanitized diagnostics.
 
-**when changing No. 3, No. 4 and No. 5, the change will be executed after 1.5 seconds.**
+## States and compatibility
 
-### Warning
-**Please do not access the data points too often, otherwise the devices will not be accessible for a few seconds.**
+Device roots continue to use the Elgato serial number. Existing writable IDs below `<serial>.light.lights.0.*` are retained:
 
-### Data points
-The data points are created automatically when a new device is found.
+- `on`, `brightness`, `temperature`
+- `hue`, `saturation`, `hex`, `rgb` where supported
 
-#### Data points for all Key Lights / Light Strips
-![Adapter UI](admin/media/ObjectsMain.png)\
-The data points are divided into:
-* **info** ⇨ Information about the device\.
-  ![Adapter UI](admin/media/objects_Info.png)
-* **light** ⇨ Data points for controlling the device, here there are two different types of data points:
-  * for controlling brightness and color temperature.
-    ![Adapter UI](admin/media/objects_light_colorTemp.png)
-  * for controlling the color
-    ![Adapter UI](admin/media/objects_light_color.png)
-* **settings** ⇨ data points for info from the settings of the device
-  ![Adapter UI](admin/media/objects_settings.png)
+Additive `health`, `battery`, capability and diagnostics states provide explicit availability information. `hardwareRevision` is now a string because current firmware can return values such as `"1.0"`. Details are in [docs/MIGRATION.md](docs/MIGRATION.md).
 
-### Notes
-* The data points for color are only available for the Light Strips.
-* The data points for color temperature are only available for the Key Lights.
-* The data points for brightness are available for all Key Lights and Light Strips.
-* The scenes from the Light Strips are not supported. Since they are not accessible via the API.
+## Network and privacy
 
+All device control uses local unauthenticated HTTP. Host validation accepts private/link-local addresses and local hostnames only; URL schemes, credentials, paths and public IP addresses are rejected. The adapter does not require a cloud account. SSID values and stable identifiers are removed from diagnostics/probe output.
+
+If discovery fails across a VLAN, allow mDNS reflection/UDP 5353 as appropriate and TCP 9123 from the ioBroker host to the light, or configure the private address manually. Avoid polling faster than necessary; the default is 60 seconds and writes are serialized/coalesced per device.
+
+## Development and diagnostics
+
+```shell
+npm ci
+npm run check
+npm test
+npm run build
+npm run elgato:probe -- 192.168.1.50 9123
+```
+
+The probe performs GET requests only and redacts serial number, MAC address and SSID. Architecture, protocol evidence and the modernization audit are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ELGATO_API.md](docs/ELGATO_API.md) and [docs/REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md).
 
 ## Changelog
-<!--
-    Placeholder for the next version (at the beginning of the line):
-    ### **WORK IN PROGRESS**
--->
 
 ### **WORK IN PROGRESS**
-- (mcm1957) Adapetr requires node.js >= 20 now
-- (copilot) Adapter requires admin >= 7.7.22 now
-- (copilot) Adapter requires js-controller >= 6.0.11 now
-- (mcm1957) Dependencies have been updated
+
+- Complete backend rewrite with validated native HTTP client, capability detection, per-device queues, bounded requests and retry/backoff.
+- Restored bounded Bonjour/mDNS discovery with manual setup fallback.
+- Added Key Light Mini battery/studio-mode support and response-driven RGB/temperature controls.
+- Replaced the private React 17 UI dependency with React 19, MUI 9, Vite 8 and official ioBroker GUI components.
+- Added a normal configuration page, responsive dashboard, health states, diagnostics, migration documentation and focused tests.
+- Requires Node.js >= 22.18, js-controller >= 7.2.2 and Admin >= 7.8.23.
 
 ### 1.1.0 (2024-04-14)
-* (mcm1957) Adapter requires node.js 18 and js-controller >= 5 now
-* (mcm1957) Dependencies have been updated
 
-### 1.0.1 (2024-01-18)
-* (mcm1957) Writing states now requires ack flag to be false.
-* (mcm1957) Small adaptions to solve review issues have been applied.
+- Adapter requires Node.js 18 and js-controller >= 5.
+- Dependencies updated.
 
-### 1.0.0 (2024-01-18)
-* (mcm1957) Adapter requires node.js 18 or newer now
-* (mcm1957) Adapter has been moved into iobroker-community-adapters area
-* (mcm1957) Dependencies have been updated
+Older entries: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
-### 0.2.0 (2023-02-26)
-* (xXBJXx) updated dependencies
-* (xXBJXx) Updating the UI to the new functions of the iobroker-react library
+## Credits and license
 
-### 0.1.0 (2023-02-06)
-* (xXBJXx) removed the Bonjour search, because it did not work properly
-* (xXBJXx) Adding a delete function for devices
-* (xXBJXx) Dependency updates
-* (xXBJXx) feature request [#2](https://github.com/xXBJXx/ioBroker.elgato-key-light/issues/2) added
+Created by xXBJXx and maintained by ioBroker Community Adapters. Elgato is a trademark of Corsair GmbH; this project is not affiliated with or endorsed by Elgato/Corsair.
 
-## License
-MIT License
-
-Copyright (c) 2024-2026 iobroker-community-adapters <mcm57@gmx.at>
-Copyright (c) 2023 xXBJXx <issi.dev.iobroker@gmail.com>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-
-SOFTWARE.
+MIT License. Copyright (c) 2023 xXBJXx and 2024-2026 ioBroker Community Adapters. See [LICENSE](LICENSE).
