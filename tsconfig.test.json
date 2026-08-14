@@ -5,9 +5,10 @@
     "allowJs": false,
     "checkJs": false,
     "rootDir": "src",
-    "outDir": "build",
-    "declaration": true
+    "outDir": ".test-build",
+    "declaration": false,
+    "sourceMap": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test-d.ts"]
+  "exclude": ["src/main.ts"]
 }

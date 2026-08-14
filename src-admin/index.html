@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Elgato Lights</title><script>
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Elgato Key Light</title><script>
     const script = document.createElement('script');
     window.registerSocketOnLoad = cb => { window.socketLoadedHandler = cb; };
     const query = Object.fromEntries(new URLSearchParams(window.location.search));
@@ -9,8 +9,6 @@
       ? `${window.location.protocol}//${query.host || window.location.hostname}:${query.port || 8081}/lib/js/socket.io.js`
       : './../../lib/js/socket.io.js';
     document.head.appendChild(script);
-  </script>  <script type="module" crossorigin src="./tab-assets/tab_m-CX1BlupT.js"></script>
-  <link rel="stylesheet" crossorigin href="./tab-assets/tab_m-2V-PEnoG.css">
-</head>
-  <body><div id="root"></div></body>
+  </script></head>
+  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
 </html>

@@ -1,13 +1,18 @@
-// This file extends the AdapterConfig type from "@types/iobroker"
+import type { ConfiguredDevice } from '../device-manager/types';
 
-// Augment the globally declared type ioBroker.AdapterConfig
 declare global {
-	namespace ioBroker {
-		interface AdapterConfig {
-			interval: number;
-		}
-	}
+    namespace ioBroker {
+        interface AdapterConfig {
+            interval: number;
+            discoveryEnabled?: boolean;
+            autoAddDiscovered?: boolean;
+            requestTimeoutMs?: number;
+            maxBackoffSeconds?: number;
+            writeDebounceMs?: number;
+            discoveryTimeoutMs?: number;
+            devices?: ConfiguredDevice[];
+        }
+    }
 }
 
-// this is required so the above AdapterConfig is found by TypeScript / type checking
 export {};

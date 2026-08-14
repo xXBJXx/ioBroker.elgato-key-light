@@ -146,12 +146,11 @@
     "compact": true,
     "connectionType": "local",
     "dataSource": "poll",
-    "materializeTab": true,
     "messagebox": true,
     "singleton": true,
     "stopBeforeUpdate": true,
     "adminUI": {
-      "config": "none",
+      "config": "materialize",
       "tab": "materialize"
     },
     "adminTab": {
@@ -174,17 +173,24 @@
     "eraseOnUpload": true,
     "dependencies": [
       {
-        "js-controller": ">=6.0.11"
+        "js-controller": ">=7.2.2"
       }
     ],
     "globalDependencies": [
       {
-        "admin": ">=7.7.22"
+        "admin": ">=7.8.23"
       }
     ]
   },
   "native": {
-    "interval": 60
+    "interval": 60,
+    "requestTimeoutMs": 3000,
+    "maxBackoffSeconds": 300,
+    "writeDebounceMs": 200,
+    "discoveryTimeoutMs": 5000,
+    "discoveryEnabled": true,
+    "autoAddDiscovered": false,
+    "devices": []
   },
   "objects": [],
   "instanceObjects": [
