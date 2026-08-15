@@ -77,4 +77,19 @@ describe('ElgatoClient', () => {
         await client.setLights({ brightness: 42 });
         assert.deepEqual(JSON.parse(capturedBody), { numberOfLights: 1, lights: [{ brightness: 42 }] });
     });
+
+    it('accepts an empty successful response when updating Mini settings', async () => {
+        let capturedBody = '';
+        const client = new ElgatoClient('192.168.1.15', 9123, {
+            fetchImplementation: async (_input, init) => {
+                capturedBody = String(init?.body);
+                return new Response(null, { status: 204 });
+            },
+        });
+
+        const result = await client.setSettings({ battery: { bypass: 1 } });
+
+        assert.deepEqual(result, {});
+        assert.deepEqual(JSON.parse(capturedBody), { battery: { bypass: 1 } });
+    });
 });

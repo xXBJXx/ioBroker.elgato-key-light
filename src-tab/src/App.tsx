@@ -42,6 +42,7 @@ interface Snapshot {
     battery?: { level?: number; status: string; powerSource: string };
     settings?: { battery?: { bypass?: boolean } };
     capabilities: Capabilities;
+    capturedAt: string;
 }
 interface DeviceView {
     config: { host: string; port: number; displayName?: string };
@@ -137,7 +138,7 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
                         <Box><Typography variant="h4">Elgato Lights</Typography><Typography color="text.secondary">Local device dashboard</Typography></Box>
                         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}><Button onClick={() => void this.setAllPower(true)}>All on</Button><Button onClick={() => void this.setAllPower(false)}>All off</Button><Button startIcon={<TroubleshootIcon />} onClick={this.showDiagnostics}>Diagnostics</Button><Button startIcon={<RefreshIcon />} onClick={() => void this.refresh()}>Refresh</Button></Stack>
                     </Stack>
-                    {this.state.loadingDevices ? <Box className="center"><CircularProgress /></Box> : this.state.devices.length === 0 ? <Alert severity="info">No configured device. Add one in the adapter configuration.</Alert> : <Grid container spacing={2}>{this.state.devices.map(device => <Grid size={{ xs: 12, md: 6, xl: 4 }} key={device.health.id}><DeviceCard namespace={`${this.adapterName}.${this.instance}`} device={device} socket={this.socket} onCommand={this.command} onError={message => this.showError(message)} /></Grid>)}</Grid>}
+                    {this.state.loadingDevices ? <Box className="center"><CircularProgress /></Box> : this.state.devices.length === 0 ? <Alert severity="info">No configured device. Add one in the adapter configuration.</Alert> : <Grid container spacing={2}>{this.state.devices.map(device => <Grid size={{ xs: 12, md: 6, xl: 4 }} key={device.health.id}><DeviceCard namespace={`${this.adapterName}.${this.instance}`} device={device} socket={this.socket} onCommand={this.command} onRefresh={() => void this.refresh(false)} onError={message => this.showError(message)} /></Grid>)}</Grid>}
                     <DiagnosticsDialog value={this.state.diagnostics} onClose={() => this.setState({ diagnostics: null })} />
                     {this.renderHelperDialogs()}
                 </Box>
@@ -146,20 +147,50 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
     }
 }
 
-interface DeviceCardProps { namespace: string; device: DeviceView; socket: AdminConnection; onCommand(command: string, payload: Record<string, unknown>): Promise<void>; onError(message: string): void }
+interface DeviceCardProps { namespace: string; device: DeviceView; socket: AdminConnection; onCommand(command: string, payload: Record<string, unknown>): Promise<void>; onRefresh(): void; onError(message: string): void }
 
-function DeviceCard({ namespace, device, socket, onCommand, onError }: DeviceCardProps): React.JSX.Element {
+function DeviceCard({ namespace, device, socket, onCommand, onRefresh, onError }: DeviceCardProps): React.JSX.Element {
     const snapshot = device.snapshot;
     const light = snapshot?.lights.lights[0];
     const capabilities = snapshot?.capabilities ?? device.capabilities;
     const stateRoot = `${namespace}.${device.health.id}.light.lights.0`;
-    const setValue = async (property: string, value: string | number | boolean): Promise<void> => {
-        try { await socket.setState(`${stateRoot}.${property}`, value, false); }
-        catch (error) { onError(error instanceof Error ? error.message : String(error)); }
+    const capturedAt = snapshot?.capturedAt;
+    const [draftState, setDraftState] = React.useState<{
+        capturedAt?: string;
+        values: Record<string, string | number | boolean>;
+    }>({ values: {} });
+    const draft = draftState.capturedAt === capturedAt ? draftState.values : {};
+    const setDraftValue = (property: string, value: string | number | boolean): void => {
+        setDraftState(current => ({
+            capturedAt,
+            values: {
+                ...(current.capturedAt === capturedAt ? current.values : {}),
+                [property]: value,
+            },
+        }));
+    };
+    const setValue = async (property: string, value: string | number | boolean, id = `${stateRoot}.${property}`): Promise<void> => {
+        setDraftValue(property, value);
+        try {
+            await socket.setState(id, value, false);
+            window.setTimeout(onRefresh, 350);
+        } catch (error) {
+            setDraftState(current => {
+                const next = { ...(current.capturedAt === capturedAt ? current.values : {}) };
+                delete next[property];
+                return { capturedAt, values: next };
+            });
+            onError(error instanceof Error ? error.message : String(error));
+        }
     };
     const run = (command: string): void => { void onCommand(command, { id: device.health.id }).catch(error => onError(error instanceof Error ? error.message : String(error))); };
-    const kelvin = light?.temperature ? Math.round(1_000_000 / light.temperature) : 4_000;
-    const color = hsvToHex(light?.hue ?? 0, light?.saturation ?? 0, light?.brightness ?? 100);
+    const brightness = typeof draft.brightness === 'number' ? draft.brightness : (light?.brightness ?? 0);
+    const serverKelvin = light?.temperature ? Math.round(1_000_000 / light.temperature) : 4_000;
+    const kelvin = typeof draft.temperature === 'number' ? draft.temperature : serverKelvin;
+    const serverColor = hsvToHex(light?.hue ?? 0, light?.saturation ?? 0, light?.brightness ?? 100);
+    const color = typeof draft.hex === 'string' ? draft.hex : serverColor;
+    const power = typeof draft.on === 'boolean' ? draft.on : light?.on === 1;
+    const studioMode = typeof draft.studioMode === 'boolean' ? draft.studioMode : (snapshot?.settings?.battery?.bypass ?? false);
     const productName = snapshot?.info.productName;
     const image = deviceImage(productName);
 
@@ -168,12 +199,12 @@ function DeviceCard({ namespace, device, socket, onCommand, onError }: DeviceCar
         <CardContent><Stack spacing={2}>
         <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}><Box sx={{ flex: 1 }}><Typography variant="h6">{snapshot?.info.displayName || device.config.displayName || device.config.host}</Typography><Typography variant="body2" color="text.secondary">{productName || `${device.config.host}:${device.config.port}`}</Typography></Box>{image ? null : <Chip color={device.health.reachable ? 'success' : 'error'} size="small" label={device.health.reachable ? 'Online' : 'Offline'} />}</Stack>
         {device.health.reachable && light && capabilities ? <>
-            {capabilities.power ? <ControlRow icon={<LightModeIcon />} label="Power"><Switch checked={light.on === 1} onChange={event => void setValue('on', event.target.checked)} /></ControlRow> : null}
-            {capabilities.brightness ? <ControlRow icon={<BoltIcon />} label={`Brightness ${Math.round(light.brightness ?? 0)}%`}><Slider aria-label="Brightness" value={light.brightness ?? 0} min={0} max={100} onChangeCommitted={(_, value) => void setValue('brightness', Array.isArray(value) ? value[0] : value)} /></ControlRow> : null}
-            {capabilities.temperature ? <ControlRow icon={<LightModeIcon />} label={`Temperature ${kelvin} K`}><Slider aria-label="Color temperature" value={kelvin} min={2900} max={7000} step={50} onChangeCommitted={(_, value) => void setValue('temperature', Array.isArray(value) ? value[0] : value)} /></ControlRow> : null}
+            {capabilities.power ? <ControlRow icon={<LightModeIcon />} label="Power"><Switch checked={power} onChange={event => void setValue('on', event.target.checked)} /></ControlRow> : null}
+            {capabilities.brightness ? <ControlRow icon={<BoltIcon />} label={`Brightness ${Math.round(brightness)}%`}><Slider aria-label="Brightness" value={brightness} min={0} max={100} onChange={(_, value) => setDraftValue('brightness', Array.isArray(value) ? value[0] : value)} onChangeCommitted={(_, value) => void setValue('brightness', Array.isArray(value) ? value[0] : value)} /></ControlRow> : null}
+            {capabilities.temperature ? <ControlRow icon={<LightModeIcon />} label={`Temperature ${kelvin} K`}><Slider aria-label="Color temperature" value={kelvin} min={2900} max={7000} step={50} onChange={(_, value) => setDraftValue('temperature', Array.isArray(value) ? value[0] : value)} onChangeCommitted={(_, value) => void setValue('temperature', Array.isArray(value) ? value[0] : value)} /></ControlRow> : null}
             {capabilities.color ? <ControlRow icon={<ColorLensIcon />} label="Color"><input className="color-input" aria-label="RGB color" type="color" value={color} onChange={event => void setValue('hex', event.target.value)} /></ControlRow> : null}
             {snapshot.battery ? <Stack direction="row" sx={{ justifyContent: 'space-between' }}><Typography>Battery</Typography><Typography>{snapshot.battery.level ?? '—'}% · {snapshot.battery.status}</Typography></Stack> : null}
-            {capabilities.studioMode ? <ControlRow icon={<BoltIcon />} label="Studio mode"><Switch checked={snapshot.settings?.battery?.bypass ?? false} onChange={event => void socket.setState(`${namespace}.${device.health.id}.battery.studioMode`, event.target.checked, false).catch(error => onError(error instanceof Error ? error.message : String(error)))} /></ControlRow> : null}
+            {capabilities.studioMode ? <ControlRow icon={<BoltIcon />} label="Studio mode"><Switch checked={studioMode} onChange={event => void setValue('studioMode', event.target.checked, `${namespace}.${device.health.id}.battery.studioMode`)} /></ControlRow> : null}
         </> : <Alert severity="warning">{device.health.lastError || 'Device is currently unreachable.'}</Alert>}
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}><Typography variant="caption" color="text.secondary">{device.health.latencyMs !== undefined ? `${device.health.latencyMs} ms` : 'No latency sample'}{snapshot?.info.firmwareVersion ? ` · FW ${snapshot.info.firmwareVersion}` : ''}</Typography><Stack direction="row"><Tooltip title="Identify"><span><IconButton disabled={!device.health.reachable || !capabilities?.identify} aria-label="Identify device" onClick={() => run('identifyDevice')}><LightModeIcon /></IconButton></span></Tooltip><Tooltip title="Reconnect"><IconButton aria-label="Reconnect device" onClick={() => run('reconnectDevice')}><RefreshIcon /></IconButton></Tooltip></Stack></Stack>
     </Stack></CardContent></Card>;

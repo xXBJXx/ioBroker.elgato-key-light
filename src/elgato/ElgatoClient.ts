@@ -106,7 +106,9 @@ export class ElgatoClient {
      *
      */
     public setSettings(update: Record<string, unknown>): Promise<LightSettings> {
-        return this.request('/elgato/lights/settings', 'PUT', update, parseSettings);
+        return this.request('/elgato/lights/settings', 'PUT', update, value =>
+            value === undefined ? {} : parseSettings(value),
+        );
     }
 
     /**

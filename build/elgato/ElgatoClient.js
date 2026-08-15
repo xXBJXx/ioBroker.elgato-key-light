@@ -61,7 +61,7 @@ class ElgatoClient {
      *
      */
     setSettings(update) {
-        return this.request('/elgato/lights/settings', 'PUT', update, parsers_1.parseSettings);
+        return this.request('/elgato/lights/settings', 'PUT', update, value => value === undefined ? {} : (0, parsers_1.parseSettings)(value));
     }
     /**
      *
