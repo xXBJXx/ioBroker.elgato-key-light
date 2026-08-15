@@ -40,7 +40,6 @@ export interface LightsResponse {
 }
 
 export interface LightUpdate {
-    id?: number;
     on?: number;
     brightness?: number;
     temperature?: number;

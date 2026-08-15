@@ -53,7 +53,7 @@ export declare class ElgatoClient {
     /**
      *
      */
-    setLights(update: LightUpdate, lightIndex?: number): Promise<LightsResponse>;
+    setLights(update: LightUpdate): Promise<LightsResponse>;
     /**
      *
      */

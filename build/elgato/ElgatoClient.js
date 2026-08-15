@@ -48,11 +48,8 @@ class ElgatoClient {
     /**
      *
      */
-    setLights(update, lightIndex = 0) {
-        if (!Number.isInteger(lightIndex) || lightIndex < 0) {
-            throw new RangeError('Light index must be a non-negative integer.');
-        }
-        return this.request('/elgato/lights', 'PUT', { numberOfLights: 1, lights: [{ ...update, id: lightIndex }] }, parsers_1.parseLights);
+    setLights(update) {
+        return this.request('/elgato/lights', 'PUT', { numberOfLights: 1, lights: [update] }, parsers_1.parseLights);
     }
     /**
      *

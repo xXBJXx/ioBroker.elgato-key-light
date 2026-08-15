@@ -66,7 +66,7 @@ describe('ElgatoClient', () => {
         await assert.rejects(oversized.getLights(), ElgatoInvalidResponseError);
     });
 
-    it('sends only the requested light update', async () => {
+    it('sends only writable API fields without a response-only light id', async () => {
         let capturedBody = '';
         const client = new ElgatoClient('192.168.1.15', 9123, {
             fetchImplementation: async (_input, init) => {
@@ -75,6 +75,6 @@ describe('ElgatoClient', () => {
             },
         });
         await client.setLights({ brightness: 42 });
-        assert.deepEqual(JSON.parse(capturedBody), { numberOfLights: 1, lights: [{ brightness: 42, id: 0 }] });
+        assert.deepEqual(JSON.parse(capturedBody), { numberOfLights: 1, lights: [{ brightness: 42 }] });
     });
 });

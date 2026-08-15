@@ -41,7 +41,7 @@ export interface DeviceManagerOptions {
 
 export interface DeviceClient {
     snapshot(): Promise<ElgatoSnapshot>;
-    setLights(update: LightUpdate, lightIndex?: number): Promise<unknown>;
+    setLights(update: LightUpdate): Promise<unknown>;
     setDisplayName(displayName: string): Promise<unknown>;
     setSettings(update: Record<string, unknown>): Promise<unknown>;
     identify(): Promise<void>;

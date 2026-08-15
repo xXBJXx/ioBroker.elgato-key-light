@@ -91,16 +91,8 @@ export class ElgatoClient {
     /**
      *
      */
-    public setLights(update: LightUpdate, lightIndex = 0): Promise<LightsResponse> {
-        if (!Number.isInteger(lightIndex) || lightIndex < 0) {
-            throw new RangeError('Light index must be a non-negative integer.');
-        }
-        return this.request(
-            '/elgato/lights',
-            'PUT',
-            { numberOfLights: 1, lights: [{ ...update, id: lightIndex }] },
-            parseLights,
-        );
+    public setLights(update: LightUpdate): Promise<LightsResponse> {
+        return this.request('/elgato/lights', 'PUT', { numberOfLights: 1, lights: [update] }, parseLights);
     }
 
     /**
