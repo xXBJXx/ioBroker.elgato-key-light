@@ -51,6 +51,8 @@ export interface HsvColor {
     value: number;
 }
 
+export type HsColor = Pick<HsvColor, 'hue' | 'saturation'>;
+
 export function rgbToHsv({ red, green, blue }: RgbColor): HsvColor {
     const [r, g, b] = [red, green, blue].map(channel => clamp(channel, 0, 255) / 255) as [number, number, number];
     const maximum = Math.max(r, g, b);
@@ -74,6 +76,11 @@ export function rgbToHsv({ red, green, blue }: RgbColor): HsvColor {
         saturation: maximum === 0 ? 0 : (delta / maximum) * 100,
         value: maximum * 100,
     };
+}
+
+export function rgbToHs(color: RgbColor): HsColor {
+    const { hue, saturation } = rgbToHsv(color);
+    return { hue, saturation };
 }
 
 export function hsvToRgb({ hue, saturation, value }: HsvColor): RgbColor {

@@ -3,7 +3,7 @@ import * as utils from '@iobroker/adapter-core';
 import { DeviceManager } from './device-manager/DeviceManager';
 import type { ConfiguredDevice, DeviceHealth } from './device-manager/types';
 import { ElgatoDiscovery } from './elgato/ElgatoDiscovery';
-import { kelvinToMired, parseHex, parseRgb, rgbToHsv } from './elgato/conversions';
+import { kelvinToMired, parseHex, parseRgb, rgbToHs } from './elgato/conversions';
 import { ElgatoError } from './elgato/errors';
 import type { ElgatoSnapshot, LightUpdate } from './elgato/types';
 import { StateRepository } from './ioBroker/StateRepository';
@@ -132,15 +132,13 @@ class ElgatoKeyLight extends utils.Adapter {
                 if (typeof value !== 'string') {
                     throw new TypeError('RGB hex color must be a string.');
                 }
-                const hsv = rgbToHsv(parseHex(value));
-                return { hue: hsv.hue, saturation: hsv.saturation, brightness: hsv.value };
+                return rgbToHs(parseHex(value));
             }
             case 'rgb': {
                 if (typeof value !== 'string') {
                     throw new TypeError('RGB color must be a string.');
                 }
-                const hsv = rgbToHsv(parseRgb(value));
-                return { hue: hsv.hue, saturation: hsv.saturation, brightness: hsv.value };
+                return rgbToHs(parseRgb(value));
             }
             default:
                 return undefined;

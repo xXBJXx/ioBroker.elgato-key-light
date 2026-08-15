@@ -28,7 +28,9 @@ export interface HsvColor {
      */
     value: number;
 }
+export type HsColor = Pick<HsvColor, 'hue' | 'saturation'>;
 export declare function rgbToHsv({ red, green, blue }: RgbColor): HsvColor;
+export declare function rgbToHs(color: RgbColor): HsColor;
 export declare function hsvToRgb({ hue, saturation, value }: HsvColor): RgbColor;
 export declare function rgbToHex(color: RgbColor): string;
 export declare function parseRgb(value: string): RgbColor;

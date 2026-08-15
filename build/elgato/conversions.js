@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.kelvinToMired = kelvinToMired;
 exports.miredToKelvin = miredToKelvin;
 exports.rgbToHsv = rgbToHsv;
+exports.rgbToHs = rgbToHs;
 exports.hsvToRgb = hsvToRgb;
 exports.rgbToHex = rgbToHex;
 exports.parseRgb = parseRgb;
@@ -51,6 +52,10 @@ function rgbToHsv({ red, green, blue }) {
         saturation: maximum === 0 ? 0 : (delta / maximum) * 100,
         value: maximum * 100,
     };
+}
+function rgbToHs(color) {
+    const { hue, saturation } = rgbToHsv(color);
+    return { hue, saturation };
 }
 function hsvToRgb({ hue, saturation, value }) {
     const normalizedHue = ((hue % 360) + 360) % 360;

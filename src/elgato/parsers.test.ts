@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { detectCapabilities } from './capabilities';
-import { hsvToRgb, kelvinToMired, miredToKelvin, parseHex, parseRgb, rgbToHex, rgbToHsv } from './conversions';
+import { hsvToRgb, kelvinToMired, miredToKelvin, parseHex, parseRgb, rgbToHex, rgbToHs, rgbToHsv } from './conversions';
 import { ElgatoInvalidResponseError, ElgatoTargetError } from './errors';
 import { parseAccessoryInfo, parseBattery, parseLights, parseSettings } from './parsers';
 import { normalizeTarget, targetBaseUrl } from './target';
@@ -94,6 +94,11 @@ describe('Elgato conversions', () => {
         assert.deepEqual(rgb, { red: 10, green: 120, blue: 240 });
         assert.equal(rgbToHex(parseRgb('10, 120, 240')), '#0A78F0');
         assert.deepEqual(parseHex('#0a78f0'), { red: 10, green: 120, blue: 240 });
+    });
+
+    it('keeps brightness separate when converting RGB states to a light color update', () => {
+        assert.deepEqual(rgbToHs(parseHex('#0000FF')), { hue: 240, saturation: 100 });
+        assert.deepEqual(rgbToHs(parseHex('#000080')), { hue: 240, saturation: 100 });
     });
 });
 

@@ -151,15 +151,13 @@ class ElgatoKeyLight extends utils.Adapter {
                 if (typeof value !== 'string') {
                     throw new TypeError('RGB hex color must be a string.');
                 }
-                const hsv = (0, conversions_1.rgbToHsv)((0, conversions_1.parseHex)(value));
-                return { hue: hsv.hue, saturation: hsv.saturation, brightness: hsv.value };
+                return (0, conversions_1.rgbToHs)((0, conversions_1.parseHex)(value));
             }
             case 'rgb': {
                 if (typeof value !== 'string') {
                     throw new TypeError('RGB color must be a string.');
                 }
-                const hsv = (0, conversions_1.rgbToHsv)((0, conversions_1.parseRgb)(value));
-                return { hue: hsv.hue, saturation: hsv.saturation, brightness: hsv.value };
+                return (0, conversions_1.rgbToHs)((0, conversions_1.parseRgb)(value));
             }
             default:
                 return undefined;
