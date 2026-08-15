@@ -9,5 +9,6 @@ export default defineConfig({
         emptyOutDir: false,
         assetsDir: 'admin-assets',
         sourcemap: false,
+        rollupOptions: { input: 'index_m.html' },
     },
 });
