@@ -46,7 +46,7 @@ interface Snapshot {
 }
 interface DeviceView {
     config: { host: string; port: number; displayName?: string };
-    health: { id: string; reachable: boolean; latencyMs?: number; lastSuccess?: string; lastError?: string; consecutiveFailures: number };
+    health: { id: string; reachable: boolean; latencyMs?: number; lastSuccess?: string; lastError?: string; consecutiveFailures: number; nextPollAt?: string };
     snapshot?: Snapshot;
     capabilities?: Capabilities;
 }
@@ -193,6 +193,7 @@ function DeviceCard({ namespace, device, socket, onCommand, onRefresh, onError }
     const studioMode = typeof draft.studioMode === 'boolean' ? draft.studioMode : (snapshot?.settings?.battery?.bypass ?? false);
     const productName = snapshot?.info.productName;
     const image = deviceImage(productName);
+    const nextPoll = useNextPoll(device.health.nextPollAt);
 
     return <Card variant="outlined" className={device.health.reachable ? 'device-card reachable' : 'device-card offline'}>
         {image ? <Box className="device-hero"><Box component="img" className="device-image" src={`./media/${image}.png`} alt={productName || 'Elgato light'} /><Chip className="device-status" color={device.health.reachable ? 'success' : 'error'} size="small" label={device.health.reachable ? 'Online' : 'Offline'} /></Box> : null}
@@ -206,8 +207,43 @@ function DeviceCard({ namespace, device, socket, onCommand, onRefresh, onError }
             {snapshot.battery ? <Stack direction="row" sx={{ justifyContent: 'space-between' }}><Typography>Battery</Typography><Typography>{snapshot.battery.level ?? '—'}% · {snapshot.battery.status}</Typography></Stack> : null}
             {capabilities.studioMode ? <ControlRow icon={<BoltIcon />} label="Studio mode"><Switch checked={studioMode} onChange={event => void setValue('studioMode', event.target.checked, `${namespace}.${device.health.id}.battery.studioMode`)} /></ControlRow> : null}
         </> : <Alert severity="warning">{device.health.lastError || 'Device is currently unreachable.'}</Alert>}
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}><Typography variant="caption" color="text.secondary">{device.health.latencyMs !== undefined ? `${device.health.latencyMs} ms` : 'No latency sample'}{snapshot?.info.firmwareVersion ? ` · FW ${snapshot.info.firmwareVersion}` : ''}</Typography><Stack direction="row"><Tooltip title="Identify"><span><IconButton disabled={!device.health.reachable || !capabilities?.identify} aria-label="Identify device" onClick={() => run('identifyDevice')}><LightModeIcon /></IconButton></span></Tooltip><Tooltip title="Reconnect"><IconButton aria-label="Reconnect device" onClick={() => run('reconnectDevice')}><RefreshIcon /></IconButton></Tooltip></Stack></Stack>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}><Stack><Typography variant="caption" color="text.secondary">{device.health.latencyMs !== undefined ? `${device.health.latencyMs} ms` : 'No latency sample'}{snapshot?.info.firmwareVersion ? ` · FW ${snapshot.info.firmwareVersion}` : ''}</Typography><Tooltip title={nextPoll.exact}><Typography variant="caption" color="text.secondary">{nextPoll.label}</Typography></Tooltip></Stack><Stack direction="row"><Tooltip title="Identify"><span><IconButton disabled={!device.health.reachable || !capabilities?.identify} aria-label="Identify device" onClick={() => run('identifyDevice')}><LightModeIcon /></IconButton></span></Tooltip><Tooltip title="Reconnect"><IconButton aria-label="Reconnect device" onClick={() => run('reconnectDevice')}><RefreshIcon /></IconButton></Tooltip></Stack></Stack>
     </Stack></CardContent></Card>;
+}
+
+function useNextPoll(nextPollAt: string | undefined): { label: string; exact: string } {
+    const [now, setNow] = React.useState<number>();
+    React.useEffect(() => {
+        const update = (): void => setNow(Date.now());
+        const initial = window.setTimeout(update, 0);
+        const timer = window.setInterval(update, 1_000);
+        return () => {
+            window.clearTimeout(initial);
+            window.clearInterval(timer);
+        };
+    }, []);
+
+    const timestamp = nextPollAt ? Date.parse(nextPollAt) : Number.NaN;
+    if (!Number.isFinite(timestamp)) {
+        return { label: 'Next update unknown', exact: 'No next poll timestamp available' };
+    }
+    if (now === undefined) {
+        return { label: 'Next update scheduled', exact: new Date(timestamp).toLocaleString() };
+    }
+    const remainingSeconds = Math.max(0, Math.ceil((timestamp - now) / 1_000));
+    return {
+        label: remainingSeconds === 0 ? 'Update due' : `Next update in ${formatDuration(remainingSeconds)}`,
+        exact: new Date(timestamp).toLocaleString(),
+    };
+}
+
+function formatDuration(seconds: number): string {
+    if (seconds < 60) {
+        return `${seconds} s`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+    return remainder === 0 ? `${minutes} min` : `${minutes} min ${remainder} s`;
 }
 
 function deviceImage(productName: string | undefined): string | undefined {
