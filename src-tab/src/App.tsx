@@ -42,6 +42,8 @@ import {
     type GenericAppState,
 } from '@iobroker/gui-components';
 
+import { translations } from './translations';
+
 interface Capabilities { power: boolean; brightness: boolean; temperature: boolean; color: boolean; battery: boolean; studioMode: boolean; identify: boolean; settings?: boolean; multipleLights?: boolean; scenes?: boolean }
 interface Light { id?: number; name?: string; on?: number; brightness?: number; temperature?: number; hue?: number; saturation?: number; numberOfSceneElements?: number }
 interface Snapshot {
@@ -69,24 +71,6 @@ const DEVICE_IMAGE_NAMES = new Set([
     'elgato-light-strip',
     'elgato-ring-light',
 ]);
-
-const translations: GenericAppSettings['translations'] = {
-    en: {},
-    de: {
-        'Local device dashboard': 'Lokales Geräte-Dashboard', 'All on': 'Alle ein', 'All off': 'Alle aus',
-        Diagnostics: 'Diagnose', Refresh: 'Aktualisieren', Online: 'Online', Offline: 'Offline', Power: 'Ein/Aus',
-        Brightness: 'Helligkeit', Temperature: 'Farbtemperatur', Color: 'Farbe', Battery: 'Akku',
-        'Studio mode': 'Studiomodus', Identify: 'Identifizieren', Reconnect: 'Neu verbinden', Copy: 'Kopieren',
-        'Export JSON': 'JSON exportieren', Close: 'Schließen', 'Update due': 'Aktualisierung fällig',
-        'Next update unknown': 'Nächste Aktualisierung unbekannt', 'Next update scheduled': 'Nächste Aktualisierung geplant',
-        'Next update in': 'Nächste Aktualisierung in', 'Device information': 'Geräteinformationen',
-        Connection: 'Verbindung', 'API requests': 'API-Abfragen', 'Device details': 'Gerätedetails',
-        Capabilities: 'Funktionen', 'Current values': 'Aktuelle Werte', 'Last successful poll': 'Letzte erfolgreiche Abfrage',
-        'Snapshot captured': 'Snapshot erstellt', 'Consecutive failures': 'Fehler in Folge', Serial: 'Seriennummer',
-        Hardware: 'Hardware', Features: 'Merkmale', 'Wi-Fi signal': 'WLAN-Signal', Endpoint: 'Endpunkt',
-        'Next poll': 'Nächste Abfrage', On: 'Ein', Off: 'Aus',
-    },
-};
 
 const t = (text: string): string => I18n.t(text);
 
@@ -118,7 +102,7 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
         if (showLoader) this.setState({ loadingDevices: true });
         try {
             const response = await this.socket.sendTo<Reply<DeviceView[]>>(this.instanceId, 'getDevices', {});
-            if (!response.success) throw new Error(response.message || 'Could not load devices');
+            if (!response.success) throw new Error(response.message || t('Could not load devices'));
             this.setState({ devices: response.result ?? [] });
         } catch (error) {
             this.showError(error instanceof Error ? error.message : String(error));
@@ -129,14 +113,14 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
 
     private command = async (command: string, payload: Record<string, unknown>): Promise<void> => {
         const response = await this.socket.sendTo<Reply<unknown>>(this.instanceId, command, payload);
-        if (!response.success) throw new Error(response.message || `${command} failed`);
+        if (!response.success) throw new Error(response.message || `${command} ${t('failed')}`);
         await this.refresh(false);
     };
 
     private showDiagnostics = async (): Promise<void> => {
         try {
             const response = await this.socket.sendTo<Reply<unknown>>(this.instanceId, 'getDiagnostics', {});
-            if (!response.success) throw new Error(response.message || 'Diagnostics failed');
+            if (!response.success) throw new Error(response.message || t('Diagnostics failed'));
             this.setState({ diagnostics: response.result ?? {} });
         } catch (error) {
             this.showError(error instanceof Error ? error.message : String(error));
@@ -168,7 +152,7 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
                         <Box><Typography variant="h4">Elgato Lights</Typography><Typography color="text.secondary">{t('Local device dashboard')}</Typography></Box>
                         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}><Button onClick={() => void this.setAllPower(true)}>{t('All on')}</Button><Button onClick={() => void this.setAllPower(false)}>{t('All off')}</Button><Button startIcon={<TroubleshootIcon />} onClick={this.showDiagnostics}>{t('Diagnostics')}</Button><Button startIcon={<RefreshIcon />} onClick={() => void this.refresh()}>{t('Refresh')}</Button></Stack>
                     </Stack>
-                    {this.state.loadingDevices ? <Box className="center"><CircularProgress /></Box> : this.state.devices.length === 0 ? <Alert severity="info">No configured device. Add one in the adapter configuration.</Alert> : <Grid container spacing={2}>{this.state.devices.map(device => <Grid size={{ xs: 12, md: 6, xl: 4 }} key={device.health.id}><DeviceCard namespace={`${this.adapterName}.${this.instance}`} device={device} socket={this.socket} onCommand={this.command} onRefresh={() => void this.refresh(false)} onError={message => this.showError(message)} /></Grid>)}</Grid>}
+                    {this.state.loadingDevices ? <Box className="center"><CircularProgress /></Box> : this.state.devices.length === 0 ? <Alert severity="info">{t('No configured device. Add one in the adapter configuration.')}</Alert> : <Grid container spacing={2}>{this.state.devices.map(device => <Grid size={{ xs: 12, md: 6, xl: 4 }} key={device.health.id}><DeviceCard namespace={`${this.adapterName}.${this.instance}`} device={device} socket={this.socket} onCommand={this.command} onRefresh={() => void this.refresh(false)} onError={message => this.showError(message)} /></Grid>)}</Grid>}
                     <DiagnosticsDialog value={this.state.diagnostics} onClose={() => this.setState({ diagnostics: null })} />
                     {this.renderHelperDialogs()}
                 </Box>
@@ -232,13 +216,13 @@ function DeviceCard({ namespace, device, socket, onCommand, onRefresh, onError }
     return <Card elevation={0} className={device.health.reachable ? 'device-card reachable' : 'device-card offline'}>
         <Box className="device-hero">
             <Box className="hero-glow" />
-            {image ? <Box component="img" className="device-image" src={`./media/${image}.png`} alt={productName || 'Elgato light'} /> : <LightModeIcon className="device-placeholder" />}
+            {image ? <Box component="img" className="device-image" src={`./media/${image}.png`} alt={productName || t('Elgato light')} /> : <LightModeIcon className="device-placeholder" />}
             <Chip className="device-status" color={device.health.reachable ? 'success' : 'error'} size="small" label={device.health.reachable ? t('Online') : t('Offline')} />
         </Box>
         <CardContent className="device-card-content"><Stack spacing={2.25} sx={{ height: '100%' }}>
         <Box className="device-heading"><Typography variant="h6" className="device-name">{displayName}</Typography><Typography variant="body2" color="text.secondary">{productName || `${device.config.host}:${device.config.port}`}</Typography></Box>
         <Stack className="device-meta" direction="row" spacing={1}>
-            <Chip icon={<SpeedIcon />} size="small" variant="outlined" label={device.health.latencyMs !== undefined ? `${device.health.latencyMs} ms` : 'No latency sample'} />
+            <Chip icon={<SpeedIcon />} size="small" variant="outlined" label={device.health.latencyMs !== undefined ? `${device.health.latencyMs} ms` : t('No latency sample')} />
             {snapshot?.info.firmwareVersion ? <Chip size="small" variant="outlined" label={`FW ${snapshot.info.firmwareVersion}`} /> : null}
         </Stack>
         <Box className="controls-surface">
@@ -246,12 +230,12 @@ function DeviceCard({ namespace, device, socket, onCommand, onRefresh, onError }
             {capabilities.power ? <ControlRow inline icon={<PowerSettingsNewIcon />} label={t('Power')}><Switch slotProps={{ input: { 'aria-label': t('Power') } }} checked={power} onChange={event => void setValue('on', event.target.checked)} /></ControlRow> : null}
             {capabilities.brightness ? <ControlRow icon={<BoltIcon />} label={`${t('Brightness')} ${Math.round(brightness)}%`}><Slider aria-label={t('Brightness')} value={brightness} min={0} max={100} onChange={(_, value) => setDraftValue('brightness', Array.isArray(value) ? value[0] : value)} onChangeCommitted={(_, value) => void setValue('brightness', Array.isArray(value) ? value[0] : value)} /></ControlRow> : null}
             {capabilities.temperature ? <ControlRow icon={<LightModeIcon />} label={`${t('Temperature')} ${kelvin} K`}><Slider aria-label={t('Temperature')} value={kelvin} min={2900} max={7000} step={50} onChange={(_, value) => setDraftValue('temperature', Array.isArray(value) ? value[0] : value)} onChangeCommitted={(_, value) => void setValue('temperature', Array.isArray(value) ? value[0] : value)} /></ControlRow> : null}
-            {capabilities.color ? <ControlRow icon={<ColorLensIcon />} label={t('Color')}><input className="color-input" aria-label="RGB color" type="color" value={color} onChange={event => void setValue('hex', event.target.value)} /></ControlRow> : null}
-            {snapshot.battery ? <Box className="battery-panel"><Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1 }}><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}><BatteryChargingFullIcon fontSize="small" /><Typography variant="body2">{t('Battery')}</Typography></Stack><Typography variant="body2" sx={{ fontWeight: 600 }}>{batteryLevel ?? '—'}% · {snapshot.battery.status}</Typography></Stack><Box className="battery-track"><Box className="battery-fill" sx={{ width: `${Math.max(0, Math.min(100, batteryLevel ?? 0))}%` }} /></Box></Box> : null}
+            {capabilities.color ? <ControlRow icon={<ColorLensIcon />} label={t('Color')}><input className="color-input" aria-label={t('RGB color')} type="color" value={color} onChange={event => void setValue('hex', event.target.value)} /></ControlRow> : null}
+            {snapshot.battery ? <Box className="battery-panel"><Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1 }}><Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}><BatteryChargingFullIcon fontSize="small" /><Typography variant="body2">{t('Battery')}</Typography></Stack><Typography variant="body2" sx={{ fontWeight: 600 }}>{batteryLevel ?? '—'}% · {t(snapshot.battery.status)}</Typography></Stack><Box className="battery-track"><Box className="battery-fill" sx={{ width: `${Math.max(0, Math.min(100, batteryLevel ?? 0))}%` }} /></Box></Box> : null}
             {capabilities.studioMode ? <ControlRow inline icon={<BoltIcon />} label={t('Studio mode')}><Switch slotProps={{ input: { 'aria-label': t('Studio mode') } }} checked={studioMode} onChange={event => void setValue('studioMode', event.target.checked, `${namespace}.${device.health.id}.battery.studioMode`)} /></ControlRow> : null}
-        </Stack> : <Alert severity="warning" className="offline-alert">{device.health.lastError || 'Device is currently unreachable.'}</Alert>}
+        </Stack> : <Alert severity="warning" className="offline-alert">{device.health.lastError || t('Device is currently unreachable.')}</Alert>}
         </Box>
-        <Stack className="device-footer" direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1 }}><Tooltip title={nextPoll.exact}><Stack className="poll-status" direction="row" spacing={1} sx={{ alignItems: 'center' }}><ScheduleIcon fontSize="small" /><Typography variant="caption">{nextPoll.label}</Typography></Stack></Tooltip><Stack direction="row" spacing={0.5}><Tooltip title={t('Device information')}><IconButton className="card-action" aria-label={`${t('Device information')} ${displayName}`} onClick={() => setInfoOpen(true)}><InfoOutlinedIcon /></IconButton></Tooltip><Tooltip title={t('Identify')}><span><IconButton className="card-action" disabled={!device.health.reachable || !capabilities?.identify} aria-label="Identify device" onClick={() => run('identifyDevice')}><LightModeIcon /></IconButton></span></Tooltip><Tooltip title={t('Reconnect')}><IconButton className="card-action" aria-label="Reconnect device" onClick={() => run('reconnectDevice')}><RefreshIcon /></IconButton></Tooltip></Stack></Stack>
+        <Stack className="device-footer" direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1 }}><Tooltip title={nextPoll.exact}><Stack className="poll-status" direction="row" spacing={1} sx={{ alignItems: 'center' }}><ScheduleIcon fontSize="small" /><Typography variant="caption">{nextPoll.label}</Typography></Stack></Tooltip><Stack direction="row" spacing={0.5}><Tooltip title={t('Device information')}><IconButton className="card-action" aria-label={`${t('Device information')} ${displayName}`} onClick={() => setInfoOpen(true)}><InfoOutlinedIcon /></IconButton></Tooltip><Tooltip title={t('Identify')}><span><IconButton className="card-action" disabled={!device.health.reachable || !capabilities?.identify} aria-label={t('Identify device')} onClick={() => run('identifyDevice')}><LightModeIcon /></IconButton></span></Tooltip><Tooltip title={t('Reconnect')}><IconButton className="card-action" aria-label={t('Reconnect device')} onClick={() => run('reconnectDevice')}><RefreshIcon /></IconButton></Tooltip></Stack></Stack>
     </Stack></CardContent><DeviceInfoDialog open={infoOpen} onClose={() => setInfoOpen(false)} device={device} /></Card>;
 }
 
@@ -289,19 +273,19 @@ function DeviceInfoDialog({ open, onClose, device }: { open: boolean; onClose():
             </InfoSection>
             <InfoSection title={t('Device details')}>
                 <InfoRow label={t('Serial')} value={snapshot?.info.serialNumber ?? device.health.id} mono />
-                <InfoRow label="Firmware" value={[snapshot?.info.firmwareVersion, snapshot?.info.firmwareBuildNumber !== undefined ? `Build ${snapshot.info.firmwareBuildNumber}` : undefined].filter(Boolean).join(' · ') || '—'} />
-                <InfoRow label={t('Hardware')} value={[snapshot?.info.hardwareRevision, snapshot?.info.hardwareBoardType !== undefined ? `Board ${snapshot.info.hardwareBoardType}` : undefined].filter(Boolean).join(' · ') || '—'} />
-                <InfoRow label="MAC" value={snapshot?.info.macAddress ?? '—'} mono />
+                <InfoRow label={t('Firmware')} value={[snapshot?.info.firmwareVersion, snapshot?.info.firmwareBuildNumber !== undefined ? `${t('Build')} ${snapshot.info.firmwareBuildNumber}` : undefined].filter(Boolean).join(' · ') || '—'} />
+                <InfoRow label={t('Hardware')} value={[snapshot?.info.hardwareRevision, snapshot?.info.hardwareBoardType !== undefined ? `${t('Board')} ${snapshot.info.hardwareBoardType}` : undefined].filter(Boolean).join(' · ') || '—'} />
+                <InfoRow label={t('MAC')} value={snapshot?.info.macAddress ?? '—'} mono />
                 <InfoRow label={t('Wi-Fi signal')} value={snapshot?.info.wifiInfo ? [snapshot.info.wifiInfo.rssi !== undefined ? `${snapshot.info.wifiInfo.rssi} dBm` : undefined, snapshot.info.wifiInfo.frequencyMHz !== undefined ? `${snapshot.info.wifiInfo.frequencyMHz} MHz` : undefined].filter(Boolean).join(' · ') || '—' : '—'} />
-                <InfoRow label={t('Features')} value={snapshot?.info.features?.join(', ') || '—'} />
+                <InfoRow label={t('Features')} value={snapshot?.info.features?.map(feature => t(feature)).join(', ') || '—'} />
             </InfoSection>
-            <InfoSection title={t('Capabilities')}><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>{enabledCapabilities.length > 0 ? enabledCapabilities.map(capability => <Chip size="small" label={capability} key={capability} />) : <Typography variant="body2">—</Typography>}</Stack></InfoSection>
+            <InfoSection title={t('Capabilities')}><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>{enabledCapabilities.length > 0 ? enabledCapabilities.map(capability => <Chip size="small" label={t(capability)} key={capability} />) : <Typography variant="body2">—</Typography>}</Stack></InfoSection>
             {light ? <InfoSection title={t('Current values')}>
                 <InfoRow label={t('Power')} value={light.on === 1 ? t('On') : t('Off')} />
                 <InfoRow label={t('Brightness')} value={light.brightness !== undefined ? `${light.brightness}%` : '—'} />
                 <InfoRow label={t('Temperature')} value={light.temperature ? `${Math.round(1_000_000 / light.temperature)} K (${light.temperature} mired)` : '—'} />
-                <InfoRow label="Hue / saturation" value={light.hue !== undefined || light.saturation !== undefined ? `${light.hue ?? '—'}° / ${light.saturation ?? '—'}%` : '—'} />
-                {snapshot?.battery ? <InfoRow label={t('Battery')} value={`${snapshot.battery.level ?? '—'}% · ${snapshot.battery.status} · ${snapshot.battery.powerSource}`} /> : null}
+                <InfoRow label={t('Hue / saturation')} value={light.hue !== undefined || light.saturation !== undefined ? `${light.hue ?? '—'}° / ${light.saturation ?? '—'}%` : '—'} />
+                {snapshot?.battery ? <InfoRow label={t('Battery')} value={`${snapshot.battery.level ?? '—'}% · ${t(snapshot.battery.status)} · ${t(snapshot.battery.powerSource)}`} /> : null}
             </InfoSection> : null}
         </Stack></DialogContent>
         <DialogActions><Button onClick={onClose}>{t('Close')}</Button></DialogActions>
@@ -336,7 +320,7 @@ function useNextPoll(nextPollAt: string | undefined): { label: string; exact: st
 
     const timestamp = nextPollAt ? Date.parse(nextPollAt) : Number.NaN;
     if (!Number.isFinite(timestamp)) {
-        return { label: t('Next update unknown'), exact: 'No next poll timestamp available' };
+        return { label: t('Next update unknown'), exact: t('No next poll timestamp available') };
     }
     if (now === undefined) {
         return { label: t('Next update scheduled'), exact: new Date(timestamp).toLocaleString() };

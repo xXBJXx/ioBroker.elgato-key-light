@@ -32,6 +32,8 @@ import {
     type GenericAppState,
 } from '@iobroker/gui-components';
 
+import { translations } from './translations';
+
 interface DeviceConfig {
     host: string;
     port: number;
@@ -62,19 +64,6 @@ interface DiscoveredDevice {
 interface Reply<T> { success: boolean; result?: T; message?: string }
 interface AppState extends GenericAppState { discovering: boolean; discovered: DiscoveredDevice[] }
 
-const translations: GenericAppSettings['translations'] = {
-    en: {},
-    de: {
-        'Local control, capability detection and resilient polling': 'Lokale Steuerung, Funktionserkennung und ausfallsichere Abfrage',
-        Runtime: 'Laufzeit', Discovery: 'Gerätesuche', 'Scan network': 'Netzwerk durchsuchen', Searching: 'Suche',
-        'Enable discovery': 'Gerätesuche aktivieren',
-        'Manual device': 'Manuelles Gerät', Test: 'Testen', Add: 'Hinzufügen', 'Configured devices': 'Konfigurierte Geräte',
-        Enabled: 'Aktiviert', Refresh: 'Aktualisieren', Reconnect: 'Neu verbinden', Identify: 'Identifizieren', Remove: 'Entfernen',
-        'No device configured.': 'Kein Gerät konfiguriert.',
-        'No scan results yet. Manual setup remains available.': 'Noch keine Suchergebnisse. Die manuelle Einrichtung bleibt verfügbar.',
-    },
-};
-
 const t = (text: string): string => I18n.t(text);
 
 export default class App extends GenericApp<GenericAppProps, AppState> {
@@ -92,7 +81,7 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
         this.setState({ discovering: true });
         try {
             const response = await this.socket.sendTo<Reply<DiscoveredDevice[]>>(this.instanceId, 'discover', {});
-            if (!response.success) throw new Error(response.message || 'Discovery failed');
+            if (!response.success) throw new Error(response.message || t('Discovery failed'));
             this.setState({ discovered: response.result ?? [] });
         } catch (error) {
             this.showError(error instanceof Error ? error.message : String(error));
@@ -109,10 +98,10 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
                 host: device.host,
                 port: device.port,
             });
-            if (!response.success) throw new Error(response.message || 'Could not remove device');
+            if (!response.success) throw new Error(response.message || t('Could not remove device'));
         } catch (error) {
             this.showError(
-                `${error instanceof Error ? error.message : String(error)} Save the configuration to apply the removal.`,
+                `${error instanceof Error ? error.message : String(error)} ${t('Save the configuration to apply the removal.')}`,
             );
         }
     };
@@ -174,7 +163,7 @@ function ConfigPanel(props: PanelProps): React.JSX.Element {
         setTesting(true);
         try {
             const response = await props.socket.sendTo<Reply<unknown>>(props.instanceId, 'testDevice', { host, port });
-            if (!response.success) throw new Error(response.message || 'Connection test failed');
+            if (!response.success) throw new Error(response.message || t('Connection test failed'));
         } catch (error) {
             props.onError(error instanceof Error ? error.message : String(error));
         } finally {
@@ -205,30 +194,30 @@ function ConfigPanel(props: PanelProps): React.JSX.Element {
         <Stack spacing={3} className="content">
             <Box><Typography variant="h4">Elgato Key Light</Typography><Typography color="text.secondary">{t('Local control, capability detection and resilient polling')}</Typography></Box>
             <Card variant="outlined"><CardContent><Typography variant="h6" gutterBottom>{t('Runtime')}</Typography><Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label="Polling (seconds)" type="number" value={props.native.interval ?? 60} onChange={event => props.onChange('interval', Number(event.target.value))} slotProps={{ htmlInput: { min: 5, max: 3600 } }} /></Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label="Request timeout (ms)" type="number" value={props.native.requestTimeoutMs ?? 3000} onChange={event => props.onChange('requestTimeoutMs', Number(event.target.value))} /></Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label="Maximum backoff (s)" type="number" value={props.native.maxBackoffSeconds ?? 300} onChange={event => props.onChange('maxBackoffSeconds', Number(event.target.value))} /></Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label="Write debounce (ms)" type="number" value={props.native.writeDebounceMs ?? 200} onChange={event => props.onChange('writeDebounceMs', Number(event.target.value))} /></Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label={t('Polling (seconds)')} type="number" value={props.native.interval ?? 60} onChange={event => props.onChange('interval', Number(event.target.value))} slotProps={{ htmlInput: { min: 5, max: 3600 } }} /></Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label={t('Request timeout (ms)')} type="number" value={props.native.requestTimeoutMs ?? 3000} onChange={event => props.onChange('requestTimeoutMs', Number(event.target.value))} /></Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label={t('Maximum backoff (s)')} type="number" value={props.native.maxBackoffSeconds ?? 300} onChange={event => props.onChange('maxBackoffSeconds', Number(event.target.value))} /></Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}><TextField fullWidth label={t('Write debounce (ms)')} type="number" value={props.native.writeDebounceMs ?? 200} onChange={event => props.onChange('writeDebounceMs', Number(event.target.value))} /></Grid>
             </Grid></CardContent></Card>
 
             <Card variant="outlined"><CardContent><Stack spacing={2}>
                 <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', gap: 1 }}><Box><Typography variant="h6">{t('Discovery')}</Typography><Typography color="text.secondary">Bonjour/mDNS service _elg._tcp.local.</Typography></Box><Button startIcon={props.discovering ? <RefreshIcon /> : <SearchIcon />} disabled={props.discovering} onClick={props.onDiscover}>{props.discovering ? `${t('Searching')}…` : t('Scan network')}</Button></Stack>
                 <FormControlLabel control={<Switch checked={props.native.discoveryEnabled ?? true} onChange={event => props.onChange('discoveryEnabled', event.target.checked)} />} label={t('Enable discovery')} />
-                <TextField label="Discovery timeout (ms)" type="number" value={props.native.discoveryTimeoutMs ?? 5000} onChange={event => props.onChange('discoveryTimeoutMs', Number(event.target.value))} />
-                <TextField label="Network interface (optional)" helperText="Local interface IP used for mDNS; leave empty to use all interfaces." value={props.native.discoveryInterface ?? ''} onChange={event => props.onChange('discoveryInterface', event.target.value)} />
-                {props.discovered.length === 0 ? <Alert severity="info">No scan results yet. Manual setup remains available.</Alert> : props.discovered.map(device => {
+                <TextField label={t('Discovery timeout (ms)')} type="number" value={props.native.discoveryTimeoutMs ?? 5000} onChange={event => props.onChange('discoveryTimeoutMs', Number(event.target.value))} />
+                <TextField label={t('Network interface (optional)')} helperText={t('Local interface IP used for mDNS; leave empty to use all interfaces.')} value={props.native.discoveryInterface ?? ''} onChange={event => props.onChange('discoveryInterface', event.target.value)} />
+                {props.discovered.length === 0 ? <Alert severity="info">{t('No scan results yet. Manual setup remains available.')}</Alert> : props.discovered.map(device => {
                     const address = device.addresses[0] ?? device.hostname;
-                    return <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }} key={`${device.name}-${device.port}`}><Box sx={{ flex: 1 }}><Typography>{device.name}</Typography><Typography variant="body2" color="text.secondary">{address}:{device.port}</Typography></Box><Button disabled={!address} startIcon={<AddIcon />} onClick={() => address && add({ host: address, port: device.port, displayName: device.name, source: 'discovery', enabled: true })}>Add</Button></Stack>;
+                    return <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }} key={`${device.name}-${device.port}`}><Box sx={{ flex: 1 }}><Typography>{device.name}</Typography><Typography variant="body2" color="text.secondary">{address}:{device.port}</Typography></Box><Button disabled={!address} startIcon={<AddIcon />} onClick={() => address && add({ host: address, port: device.port, displayName: device.name, source: 'discovery', enabled: true })}>{t('Add')}</Button></Stack>;
                 })}
             </Stack></CardContent></Card>
 
             <Card variant="outlined"><CardContent><Stack spacing={2}>
-                <Typography variant="h6">{t('Manual device')}</Typography><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label="Private IP or local hostname" value={host} onChange={event => setHost(event.target.value)} /><TextField label="Port" type="number" value={port} onChange={event => setPort(Number(event.target.value))} /><Button disabled={!host || testing} onClick={test}>{t('Test')}</Button><Button variant="contained" disabled={!host} startIcon={<AddIcon />} onClick={() => add({ host, port, source: 'manual', enabled: true })}>{t('Add')}</Button></Stack>
+                <Typography variant="h6">{t('Manual device')}</Typography><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label={t('Private IP or local hostname')} value={host} onChange={event => setHost(event.target.value)} /><TextField label={t('Port')} type="number" value={port} onChange={event => setPort(Number(event.target.value))} /><Button disabled={!host || testing} onClick={test}>{t('Test')}</Button><Button variant="contained" disabled={!host} startIcon={<AddIcon />} onClick={() => add({ host, port, source: 'manual', enabled: true })}>{t('Add')}</Button></Stack>
             </Stack></CardContent></Card>
 
             <Card variant="outlined"><CardContent><Typography variant="h6" gutterBottom>{t('Configured devices')}</Typography><Stack spacing={1}>{devices.length === 0 ? <Alert severity="warning">{t('No device configured.')}</Alert> : devices.map((device, index) => {
                 const busy = activeAction.endsWith(device.serialNumber ?? `${device.host}:${device.port}`);
-                return <Stack className="device-row" direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { sm: 'center' }, gap: 1 }} key={`${device.host}:${device.port}`}><Box sx={{ flex: 1 }}><Typography>{device.displayName || device.host}</Typography><Stack direction="row" spacing={1}><Chip size="small" label={device.source} /><Typography variant="body2" color="text.secondary">{device.host}:{device.port}</Typography></Stack></Box><Stack direction="row" className="device-actions">
+                return <Stack className="device-row" direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { sm: 'center' }, gap: 1 }} key={`${device.host}:${device.port}`}><Box sx={{ flex: 1 }}><Typography>{device.displayName || device.host}</Typography><Stack direction="row" spacing={1}><Chip size="small" label={t(device.source)} /><Typography variant="body2" color="text.secondary">{device.host}:{device.port}</Typography></Stack></Box><Stack direction="row" className="device-actions">
                     <Tooltip title={t('Test')}><span><IconButton disabled={busy} aria-label={`${t('Test')} ${device.displayName || device.host}`} onClick={() => void runDeviceAction('testDevice', device)}><LinkIcon /></IconButton></span></Tooltip>
                     <Tooltip title={t('Refresh')}><span><IconButton disabled={busy} aria-label={`${t('Refresh')} ${device.displayName || device.host}`} onClick={() => void runDeviceAction('refreshDevice', device)}><RefreshIcon /></IconButton></span></Tooltip>
                     <Tooltip title={t('Reconnect')}><span><IconButton disabled={busy} aria-label={`${t('Reconnect')} ${device.displayName || device.host}`} onClick={() => void runDeviceAction('reconnectDevice', device)}><LinkIcon /></IconButton></span></Tooltip>
