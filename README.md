@@ -62,7 +62,7 @@ npm run build
 npm run elgato:probe -- 192.168.1.50 9123
 ```
 
-The probe performs GET requests only and redacts serial number, MAC address and SSID. Architecture, protocol evidence and the modernization audit are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ELGATO_API.md](docs/ELGATO_API.md) and [docs/REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md).
+The probe performs GET requests only and redacts serial number, MAC address and SSID. Protocol details are documented in [docs/ELGATO_API.md](docs/ELGATO_API.md).
 
 ## Changelog
 
