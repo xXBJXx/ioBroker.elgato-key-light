@@ -17,11 +17,5 @@ admin/i18n/flat.txt
 admin/i18n/*/flat.txt
 admin/src/.DS_Store
 
-#ignore .commitinfo created by ioBroker release script
+# Ignore .commitinfo created by the ioBroker release script
 .commitinfo
-
-# Local development and planning documents
-/AGENTS.md
-/ROADMAP.md
-/docs/ARCHITECTURE.md
-/docs/REPOSITORY_AUDIT.md

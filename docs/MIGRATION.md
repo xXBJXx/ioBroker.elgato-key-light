@@ -4,7 +4,7 @@
 
 The rewrite keeps serial-number device roots and the existing writable paths below `<serial>.light.lights.0`. Existing automations for power, brightness, temperature, hue, saturation, `hex` and legacy `rgb` therefore continue to work.
 
-On first startup, `native.devices` is loaded. If it is empty, the adapter reads legacy adapter-owned device objects and imports `native.device.ip`/`port` without deleting the old object tree. A successful contact resolves the stable serial number and persists the normalized device list in instance native configuration.
+On first startup, `native.devices` is loaded. If the property does not exist yet, the adapter reads legacy adapter-owned device objects and imports `native.device.ip`/`port`. A successful contact resolves the stable serial number and persists the normalized device list in instance native configuration. Once `native.devices` exists, it is authoritative for that instance; device objects not represented by its configuration are removed from that instance only.
 
 Important metadata corrections are applied with `extendObject`:
 
@@ -13,7 +13,7 @@ Important metadata corrections are applied with `extendObject`:
 - RGB/hex uses `level.color.rgb`.
 - Reachability, health, battery and capabilities are additive.
 
-No broad or automatic stale-state deletion occurs in this release. This avoids breaking scripts that still reference legacy data. Back up the instance object and adapter states before upgrading, then confirm device reachability and a read/write cycle for each model.
+Removing a configured device also removes its runtime entry and serial-root object tree from that instance. Other adapter instances and their devices remain untouched. Back up the instance object and adapter states before upgrading, then confirm device reachability and a read/write cycle for each model.
 
 ## Configuration changes
 
@@ -23,4 +23,4 @@ The former private `iobroker-react` tab and its embedded configuration editing a
 
 ## Rollback
 
-Keep an ioBroker backup made before the upgrade. The rewrite does not delete legacy device roots, but the old adapter does not understand `native.devices`. For rollback, restore the backed-up instance/object configuration or manually re-add devices using the old tab.
+Keep an ioBroker backup made before the upgrade. The old adapter does not understand `native.devices`. For rollback, restore the backed-up instance/object configuration or manually re-add devices using the old tab.
