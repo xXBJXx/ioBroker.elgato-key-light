@@ -147,14 +147,12 @@
     "connectionType": "local",
     "dataSource": "poll",
     "messagebox": true,
-    "singleton": true,
     "stopBeforeUpdate": true,
     "adminUI": {
       "config": "materialize",
       "tab": "materialize"
     },
     "adminTab": {
-      "singleton": true,
       "name": {
         "en": "Elgato Key Light",
         "de": "Elgato Key Light",

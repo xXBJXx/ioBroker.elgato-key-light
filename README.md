@@ -82,8 +82,10 @@ The probe performs GET requests only and redacts serial number, MAC address and 
 
 Older entries: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
-## Credits and license
+## License
 
 Created by xXBJXx and maintained by ioBroker Community Adapters. Elgato is a trademark of Corsair GmbH; this project is not affiliated with or endorsed by Elgato/Corsair.
 
-MIT License. Copyright (c) 2023 xXBJXx and 2024-2026 ioBroker Community Adapters. See [LICENSE](LICENSE).
+Copyright (c) 2024-2026 iobroker-community-adapters and 2023 xXBJXx
+
+Released under the MIT License. See [LICENSE](LICENSE).
