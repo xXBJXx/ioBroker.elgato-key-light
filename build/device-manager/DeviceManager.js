@@ -56,6 +56,10 @@ class DeviceManager {
         const provisionalId = configuration.serialNumber || `${target.host}:${target.port}`;
         const existing = this.devices.get(provisionalId);
         if (existing) {
+            if (configuration.source === 'discovery' &&
+                (existing.config.host !== target.host || existing.config.port !== target.port)) {
+                return this.replaceDiscoveredTarget(provisionalId, { ...config, serialNumber: provisionalId }, existing, notify);
+            }
             return this.refresh(provisionalId);
         }
         const client = this.options.clientFactory?.(target) ??
@@ -83,6 +87,32 @@ class DeviceManager {
             await this.events.onConfigurationChanged(this.configurations());
         }
         return snapshot;
+    }
+    async replaceDiscoveredTarget(id, config, previous, notify) {
+        const client = this.options.clientFactory?.(config) ??
+            new ElgatoClient_1.ElgatoClient(config.host, config.port, {
+                timeoutMs: this.options.requestTimeoutMs,
+                logger: this.logger,
+            });
+        const replacement = {
+            config,
+            client,
+            health: newHealth(id, config),
+            queue: Promise.resolve(),
+        };
+        this.devices.set(id, replacement);
+        try {
+            const snapshot = await this.refresh(id);
+            replacement.config.displayName = snapshot.info.displayName || snapshot.info.productName;
+            if (notify) {
+                await this.events.onConfigurationChanged(this.configurations());
+            }
+            return snapshot;
+        }
+        catch (error) {
+            this.devices.set(id, previous);
+            throw error;
+        }
     }
     /**
      *

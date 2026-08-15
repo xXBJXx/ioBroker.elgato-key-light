@@ -186,8 +186,8 @@
     "maxBackoffSeconds": 300,
     "writeDebounceMs": 200,
     "discoveryTimeoutMs": 5000,
+    "discoveryInterface": "",
     "discoveryEnabled": true,
-    "autoAddDiscovered": false,
     "devices": []
   },
   "objects": [],

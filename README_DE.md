@@ -68,7 +68,7 @@ Elgato-Leuchte und ioBroker-Host sollten sich normalerweise im selben lokalen Ne
 5. Die konfigurierten Geräte aktivieren und die Konfiguration speichern.
 6. In der Admin-Seitenleiste den Tab **Elgato Key Light** für die Live-Steuerung öffnen.
 
-Optional kann die automatische Suche neue Geräte beim Adapterstart selbstständig hinzufügen. Diese Option sollte deaktiviert bleiben, wenn Geräte bewusst bestimmten Adapterinstanzen zugeordnet werden sollen.
+Netzwerksuchen zeigen nur verfügbare Geräte an. Fügen Sie die gewünschten Suchergebnisse ausdrücklich hinzu, damit die Geräte der vorgesehenen Adapterinstanz zugeordnet bleiben.
 
 ### Laufzeitoptionen
 
@@ -215,13 +215,9 @@ Hardwaretests sind optional, standardmäßig rein lesend und dürfen nicht in CI
 
 ### **WORK IN PROGRESS**
 
-- (xXBJXx) Vollständiger Backend-Rewrite mit validiertem nativen HTTP-Client, Fähigkeitserkennung, Warteschlangen pro Gerät, begrenzten Anfragen und Retry/Backoff.
-- (xXBJXx) Begrenzte Bonjour-/mDNS-Suche mit manueller Einrichtung als Alternative wiederhergestellt.
-- (xXBJXx) Akku-/Studio-Modus-Unterstützung für Key Light Mini sowie antwortgesteuerte RGB-/Temperaturbedienung ergänzt.
-- (xXBJXx) Private React-17-UI-Abhängigkeit durch React 19, MUI 9, Vite 8 und offizielle ioBroker-GUI-Komponenten ersetzt.
-- (xXBJXx) Normale Konfigurationsseite, responsives Dashboard, Health-Datenpunkte, Diagnose, Migrationsdokumentation und gezielte Tests ergänzt.
-- (xXBJXx) Optimistische Dashboard-Bedienung, helligkeitserhaltende Farbänderungen und strikte Gerätetrennung zwischen Instanzen ergänzt.
-- (xXBJXx) Das Löschen eines konfigurierten Geräts entfernt jetzt auch seinen Laufzeiteintrag und den instanzeigenen Objektbaum.
+- (xXBJXx) Backend mit validiertem HTTP-Client, Fähigkeitserkennung, robustem Polling und begrenzter Bonjour-/mDNS-Suche überarbeitet.
+- (xXBJXx) Zuverlässige Steuerung unterstützter Leuchten einschließlich RGB, Temperatur, Akku und Studio-Modus sowie strikte Instanztrennung und sauberes Löschen von Geräten ergänzt.
+- (xXBJXx) Konfiguration und Dashboard mit responsiven Geräte-Cards, Health-Daten, Diagnose und Geräte-/API-Details modernisiert.
 - (xXBJXx) Benötigt Node.js >= 22.18, js-controller >= 7.2.2 und Admin >= 7.8.23.
 
 ### 1.1.0 (2024-04-14)

@@ -53,4 +53,30 @@ describe('configuration reconciliation', () => {
         );
         assert.deepEqual(result.staleObjectIds, []);
     });
+
+    it('migrates the nested device structure used by old adapter versions', () => {
+        const legacy = {
+            _id: 'elgato-key-light.0.LEGACY_SERIAL',
+            type: 'device',
+            common: { name: 'Legacy light' },
+            native: {
+                device: {
+                    ip: '192.168.1.44',
+                    port: 9123,
+                    info: { serialNumber: 'LEGACY_SERIAL', displayName: 'Legacy light' },
+                },
+            },
+        } as ioBroker.DeviceObject;
+        const result = reconcileConfigurations(undefined, [legacy], 'elgato-key-light.0');
+        assert.deepEqual(result.devices, [
+            {
+                host: '192.168.1.44',
+                port: 9123,
+                serialNumber: 'LEGACY_SERIAL',
+                displayName: 'Legacy light',
+                source: 'legacy',
+                enabled: true,
+            },
+        ]);
+    });
 });

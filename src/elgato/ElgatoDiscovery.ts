@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 import Bonjour, { type Browser, type Service } from 'bonjour-service';
 
 import type { DiscoveredElgatoDevice } from './types';
@@ -17,6 +19,11 @@ export interface DiscoveryLogger {
     warn(message: string): void;
 }
 
+export interface ElgatoDiscoveryOptions {
+    interface?: string;
+    createBonjour?: (onError: (error: Error) => void, networkInterface?: string) => Bonjour;
+}
+
 export class ElgatoDiscovery {
     private browser: Browser | undefined;
     private bonjour: Bonjour | undefined;
@@ -24,7 +31,10 @@ export class ElgatoDiscovery {
     /**
      *
      */
-    public constructor(private readonly logger?: DiscoveryLogger) {}
+    public constructor(
+        private readonly logger?: DiscoveryLogger,
+        private readonly options: ElgatoDiscoveryOptions = {},
+    ) {}
 
     /**
      *
@@ -35,21 +45,27 @@ export class ElgatoDiscovery {
         }
         this.stop();
         const devices = new Map<string, DiscoveredElgatoDevice>();
-        this.bonjour = new Bonjour(undefined, (error: Error) => {
+        const onError = (error: Error): void => {
             this.logger?.warn(`[ElgatoDiscovery] mDNS error: ${error.message}`);
-        });
+        };
+        this.bonjour =
+            this.options.createBonjour?.(onError, this.options.interface) ??
+            new Bonjour(this.options.interface ? ({ interface: this.options.interface } as never) : undefined, onError);
         this.browser = this.bonjour.find({ type: 'elg', protocol: 'tcp' });
-        this.browser.on('up', service => {
+        const remember = (service: Service): void => {
             const device = serviceToDevice(service);
-            const key = device.txt.id || `${device.hostname ?? device.name}:${device.port}`;
-            devices.set(key, device);
+            const key = discoveredDeviceIdentity(device);
+            devices.set(key, mergeDiscoveredDevice(devices.get(key), device));
             this.logger?.debug(
                 `[ElgatoDiscovery] discovered ${device.name} at ${device.addresses.join(', ')}:${device.port}`,
             );
             this.logger?.silly(
                 `[ElgatoDiscovery] service ${device.name}; ${device.addresses.length} address(es); TXT keys: ${Object.keys(device.txt).join(', ')}`,
             );
-        });
+        };
+        this.browser.on('up', remember);
+        this.browser.on('txt-update', remember);
+        this.browser.on('srv-update', remember);
         this.browser.start();
 
         await new Promise<void>(resolve => setTimeout(resolve, timeoutMs));
@@ -68,7 +84,7 @@ export class ElgatoDiscovery {
     }
 }
 
-function serviceToDevice(service: Service): DiscoveredElgatoDevice {
+export function serviceToDevice(service: Service): DiscoveredElgatoDevice {
     const txt: Record<string, string> = {};
     if (service.txt && typeof service.txt === 'object') {
         for (const [key, value] of Object.entries(service.txt as Record<string, unknown>)) {
@@ -82,9 +98,54 @@ function serviceToDevice(service: Service): DiscoveredElgatoDevice {
     return {
         name: service.name,
         ...(service.host ? { hostname: service.host.replace(/\.$/, '') } : {}),
-        addresses: [...new Set(service.addresses ?? [])],
+        addresses: sortAddresses(service.addresses ?? []),
         port: service.port || 9123,
         serviceType: '_elg._tcp.local.',
         txt,
     };
+}
+
+export function discoveredDeviceIdentity(device: DiscoveredElgatoDevice): string {
+    return (
+        device.txt.id ||
+        device.txt.serialNumber ||
+        device.txt.serial ||
+        `${device.hostname ?? device.name}:${device.port}`
+    );
+}
+
+export function preferredDiscoveredHost(device: DiscoveredElgatoDevice): string | undefined {
+    return device.addresses[0] ?? device.hostname;
+}
+
+export function mergeDiscoveredDevice(
+    current: DiscoveredElgatoDevice | undefined,
+    next: DiscoveredElgatoDevice,
+): DiscoveredElgatoDevice {
+    if (!current) {
+        return next;
+    }
+    return {
+        ...current,
+        ...next,
+        hostname: next.hostname ?? current.hostname,
+        addresses: next.addresses.length > 0 ? sortAddresses(next.addresses) : current.addresses,
+        txt: { ...current.txt, ...next.txt },
+    };
+}
+
+function sortAddresses(addresses: string[]): string[] {
+    return [...new Set(addresses.map(address => address.trim()).filter(Boolean))].sort(
+        (left, right) => addressRank(left) - addressRank(right) || left.localeCompare(right),
+    );
+}
+
+function addressRank(address: string): number {
+    if (isIP(address) === 4) {
+        return 0;
+    }
+    if (isIP(address.split('%')[0] ?? '') === 6 && !address.toLowerCase().startsWith('fe80:')) {
+        return 1;
+    }
+    return 2;
 }

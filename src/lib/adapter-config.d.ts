@@ -5,11 +5,11 @@ declare global {
         interface AdapterConfig {
             interval: number;
             discoveryEnabled?: boolean;
-            autoAddDiscovered?: boolean;
             requestTimeoutMs?: number;
             maxBackoffSeconds?: number;
             writeDebounceMs?: number;
             discoveryTimeoutMs?: number;
+            discoveryInterface?: string;
             devices?: ConfiguredDevice[];
         }
     }

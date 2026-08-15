@@ -68,7 +68,7 @@ The Elgato light and the ioBroker host normally need to be in the same local net
 5. Enable the configured devices and save the configuration.
 6. Open the **Elgato Key Light** tab in the Admin sidebar for live control.
 
-Automatic discovery can optionally add newly found devices when the adapter starts. Leave this disabled if devices should be assigned deliberately to particular adapter instances.
+Network scans only show available devices. Add the required scan results explicitly so devices remain assigned to the intended adapter instance.
 
 ### Runtime options
 
@@ -215,13 +215,9 @@ Hardware tests are opt-in, GET-only by default and must not run in CI.
 
 ### **WORK IN PROGRESS**
 
-- (xXBJXx) Complete backend rewrite with validated native HTTP client, capability detection, per-device queues, bounded requests and retry/backoff.
-- (xXBJXx) Restored bounded Bonjour/mDNS discovery with manual setup fallback.
-- (xXBJXx) Added Key Light Mini battery/studio-mode support and response-driven RGB/temperature controls.
-- (xXBJXx) Replaced the private React 17 UI dependency with React 19, MUI 9, Vite 8 and official ioBroker GUI components.
-- (xXBJXx) Added a normal configuration page, responsive dashboard, health states, diagnostics, migration documentation and focused tests.
-- (xXBJXx) Added optimistic dashboard controls, brightness-preserving color writes and strict device isolation between instances.
-- (xXBJXx) Removing a configured device now also removes its runtime entry and instance-owned object tree.
+- (xXBJXx) Reworked the backend with a validated HTTP client, capability detection, resilient polling and bounded Bonjour/mDNS discovery.
+- (xXBJXx) Added reliable controls for supported lights, including RGB, temperature, battery and studio mode, with strict instance isolation and clean device removal.
+- (xXBJXx) Modernized the configuration and dashboard UIs with responsive device cards, health data, diagnostics and device/API details.
 - (xXBJXx) Requires Node.js >= 22.18, js-controller >= 7.2.2 and Admin >= 7.8.23.
 
 ### 1.1.0 (2024-04-14)

@@ -30,6 +30,7 @@ export declare class DeviceManager {
      *
      */
     add(configuration: ConfiguredDevice, notify?: boolean): Promise<ElgatoSnapshot>;
+    private replaceDiscoveredTarget;
     /**
      *
      */

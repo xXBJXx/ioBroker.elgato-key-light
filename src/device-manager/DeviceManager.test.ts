@@ -88,4 +88,41 @@ describe('DeviceManager', () => {
         assert.ok(Date.parse(health?.nextPollAt ?? '') >= before + 900);
         manager.stop();
     });
+
+    it('reconnects a discovered serial when its IP address changes', async () => {
+        const targets: string[] = [];
+        const manager = new DeviceManager(
+            { onSnapshot: () => undefined, onHealth: () => undefined, onConfigurationChanged: () => undefined },
+            { debug: () => undefined, silly: () => undefined, warn: () => undefined },
+            {
+                pollIntervalMs: 60_000,
+                requestTimeoutMs: 1_000,
+                maxBackoffMs: 120_000,
+                writeDebounceMs: 0,
+                clientFactory: target => {
+                    targets.push(target.host);
+                    return {
+                        snapshot: async () => ({ ...snapshot(), target }),
+                        setLights: async () => undefined,
+                        setDisplayName: async () => undefined,
+                        setSettings: async () => undefined,
+                        identify: async () => undefined,
+                    };
+                },
+            },
+        );
+        await manager.start([
+            { host: '192.168.1.30', port: 9123, serialNumber: 'SERIAL', source: 'discovery', enabled: true },
+        ]);
+        await manager.add({
+            host: '192.168.1.31',
+            port: 9123,
+            serialNumber: 'SERIAL',
+            source: 'discovery',
+            enabled: true,
+        });
+        assert.deepEqual(targets, ['192.168.1.30', '192.168.1.31']);
+        assert.equal(manager.configurations()[0]?.host, '192.168.1.31');
+        manager.stop();
+    });
 });

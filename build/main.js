@@ -39,6 +39,7 @@ const ElgatoDiscovery_1 = require("./elgato/ElgatoDiscovery");
 const conversions_1 = require("./elgato/conversions");
 const errors_1 = require("./elgato/errors");
 const configuration_1 = require("./ioBroker/configuration");
+const diagnostics_1 = require("./ioBroker/diagnostics");
 const StateRepository_1 = require("./ioBroker/StateRepository");
 class ElgatoKeyLight extends utils.Adapter {
     manager;
@@ -47,7 +48,9 @@ class ElgatoKeyLight extends utils.Adapter {
     unloading = false;
     constructor(options = {}) {
         super({ ...options, name: 'elgato-key-light' });
-        this.discovery = new ElgatoDiscovery_1.ElgatoDiscovery(this.log);
+        this.discovery = new ElgatoDiscovery_1.ElgatoDiscovery(this.log, {
+            ...(this.config.discoveryInterface ? { interface: this.config.discoveryInterface } : {}),
+        });
         this.states = new StateRepository_1.StateRepository(this);
         this.on('ready', () => void this.onReady());
         this.on('stateChange', (id, state) => void this.onStateChange(id, state));
@@ -70,9 +73,6 @@ class ElgatoKeyLight extends utils.Adapter {
             writeDebounceMs: clamp(this.config.writeDebounceMs ?? 200, 0, 2_000),
         });
         await this.manager.start(configurations);
-        if ((this.config.discoveryEnabled ?? true) && this.config.autoAddDiscovered) {
-            await this.autoDiscover().catch(error => this.logAdapterError('Automatic discovery failed', error));
-        }
         await this.updateConnectionStates();
         this.log.info(`Started local Elgato manager with ${configurations.length} configured device(s).`);
     }
@@ -188,10 +188,10 @@ class ElgatoKeyLight extends utils.Adapter {
                     break;
                 case 'refreshDevice':
                 case 'reconnectDevice':
-                    result = await this.manager.refresh(requiredString(payload.id, 'id'));
+                    result = await this.manager.refresh(this.resolveDeviceId(payload));
                     break;
                 case 'identifyDevice':
-                    await this.manager.identify(requiredString(payload.id, 'id'));
+                    await this.manager.identify(this.resolveDeviceId(payload));
                     result = { success: true };
                     break;
                 case 'getDevices':
@@ -229,30 +229,6 @@ class ElgatoKeyLight extends utils.Adapter {
             temporary.stop();
         }
     }
-    async autoDiscover() {
-        const discovered = await this.discovery.discover(clamp(this.config.discoveryTimeoutMs ?? 5_000, 250, 60_000));
-        await this.setStateChangedAsync('info.discovery', JSON.stringify({ devices: discovered, scannedAt: new Date().toISOString() }), true);
-        const configuredTargets = new Set(this.manager.configurations().map(device => `${device.host}:${device.port}`));
-        for (const service of discovered) {
-            const host = service.addresses[0] ?? service.hostname;
-            if (!host || configuredTargets.has(`${host}:${service.port}`)) {
-                continue;
-            }
-            try {
-                await this.manager.add({
-                    host,
-                    port: service.port,
-                    displayName: service.name,
-                    source: 'discovery',
-                    enabled: true,
-                });
-                configuredTargets.add(`${host}:${service.port}`);
-            }
-            catch (error) {
-                this.logAdapterError(`Could not add discovered service ${service.name}`, error);
-            }
-        }
-    }
     async addDevice(payload, legacy) {
         const config = configFromPayload(payload, legacy ? 'legacy' : 'manual');
         const snapshot = await this.manager.add(config);
@@ -284,12 +260,30 @@ class ElgatoKeyLight extends utils.Adapter {
         await this.updateDeviceSummary();
         return { removed: removedFromRuntime || removedFromConfiguration };
     }
+    resolveDeviceId(payload) {
+        const requestedId = optionalString(payload.id);
+        const views = this.manager.views();
+        if (requestedId !== undefined && views.some(view => view.health.id === requestedId)) {
+            return requestedId;
+        }
+        const requestedHost = payload.host ?? payload.ip;
+        if (requestedHost === undefined && requestedId !== undefined) {
+            return requestedId;
+        }
+        const host = requiredString(requestedHost, 'host');
+        const port = payload.port === undefined ? 9123 : numberInRange(payload.port, 1, 65_535, 'Port');
+        const match = views.find(view => view.config.host === host && view.config.port === port);
+        if (!match) {
+            throw new Error(`Device ${host}:${port} is not active in this adapter instance.`);
+        }
+        return match.health.id;
+    }
     diagnostics() {
         return {
             adapter: { name: this.name, namespace: this.namespace, version: this.version },
             runtime: { node: process.version, platform: process.platform, architecture: process.arch },
             discovery: { enabled: this.config.discoveryEnabled ?? true, service: '_elg._tcp.local.' },
-            devices: this.manager?.views().map(sanitizeDeviceView) ?? [],
+            devices: (0, diagnostics_1.sanitizeDiagnostics)(this.manager?.views() ?? []),
             generatedAt: new Date().toISOString(),
         };
     }
