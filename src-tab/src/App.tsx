@@ -52,6 +52,14 @@ interface DeviceView {
 interface Reply<T> { success: boolean; result?: T; message?: string }
 interface AppState extends GenericAppState { devices: DeviceView[]; loadingDevices: boolean; diagnostics: unknown | null }
 
+const DEVICE_IMAGE_NAMES = new Set([
+    'elgato-key-light',
+    'elgato-key-light-air',
+    'elgato-key-light-mini',
+    'elgato-light-strip',
+    'elgato-ring-light',
+]);
+
 export default class App extends GenericApp<GenericAppProps, AppState> {
     private refreshTimer: number | undefined;
 
@@ -111,7 +119,7 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
         try {
             await Promise.all(
                 targets.map(device =>
-                    this.socket.setState(`${this.instanceId}.${device.health.id}.light.lights.0.on`, enabled, false),
+                    this.socket.setState(`${this.adapterName}.${this.instance}.${device.health.id}.light.lights.0.on`, enabled, false),
                 ),
             );
             window.setTimeout(() => void this.refresh(false), 500);
@@ -129,7 +137,7 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
                         <Box><Typography variant="h4">Elgato Lights</Typography><Typography color="text.secondary">Local device dashboard</Typography></Box>
                         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}><Button onClick={() => void this.setAllPower(true)}>All on</Button><Button onClick={() => void this.setAllPower(false)}>All off</Button><Button startIcon={<TroubleshootIcon />} onClick={this.showDiagnostics}>Diagnostics</Button><Button startIcon={<RefreshIcon />} onClick={() => void this.refresh()}>Refresh</Button></Stack>
                     </Stack>
-                    {this.state.loadingDevices ? <Box className="center"><CircularProgress /></Box> : this.state.devices.length === 0 ? <Alert severity="info">No configured device. Add one in the adapter configuration.</Alert> : <Grid container spacing={2}>{this.state.devices.map(device => <Grid size={{ xs: 12, md: 6, xl: 4 }} key={device.health.id}><DeviceCard namespace={this.instanceId} device={device} socket={this.socket} onCommand={this.command} onError={message => this.showError(message)} /></Grid>)}</Grid>}
+                    {this.state.loadingDevices ? <Box className="center"><CircularProgress /></Box> : this.state.devices.length === 0 ? <Alert severity="info">No configured device. Add one in the adapter configuration.</Alert> : <Grid container spacing={2}>{this.state.devices.map(device => <Grid size={{ xs: 12, md: 6, xl: 4 }} key={device.health.id}><DeviceCard namespace={`${this.adapterName}.${this.instance}`} device={device} socket={this.socket} onCommand={this.command} onError={message => this.showError(message)} /></Grid>)}</Grid>}
                     <DiagnosticsDialog value={this.state.diagnostics} onClose={() => this.setState({ diagnostics: null })} />
                     {this.renderHelperDialogs()}
                 </Box>
@@ -152,9 +160,13 @@ function DeviceCard({ namespace, device, socket, onCommand, onError }: DeviceCar
     const run = (command: string): void => { void onCommand(command, { id: device.health.id }).catch(error => onError(error instanceof Error ? error.message : String(error))); };
     const kelvin = light?.temperature ? Math.round(1_000_000 / light.temperature) : 4_000;
     const color = hsvToHex(light?.hue ?? 0, light?.saturation ?? 0, light?.brightness ?? 100);
+    const productName = snapshot?.info.productName;
+    const image = deviceImage(productName);
 
-    return <Card variant="outlined" className={device.health.reachable ? 'device-card reachable' : 'device-card offline'}><CardContent><Stack spacing={2}>
-        <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}><Box sx={{ flex: 1 }}><Typography variant="h6">{snapshot?.info.displayName || device.config.displayName || device.config.host}</Typography><Typography variant="body2" color="text.secondary">{snapshot?.info.productName || `${device.config.host}:${device.config.port}`}</Typography></Box><Chip color={device.health.reachable ? 'success' : 'error'} size="small" label={device.health.reachable ? 'Online' : 'Offline'} /></Stack>
+    return <Card variant="outlined" className={device.health.reachable ? 'device-card reachable' : 'device-card offline'}>
+        {image ? <Box className="device-hero"><Box component="img" className="device-image" src={`./media/${image}.png`} alt={productName || 'Elgato light'} /><Chip className="device-status" color={device.health.reachable ? 'success' : 'error'} size="small" label={device.health.reachable ? 'Online' : 'Offline'} /></Box> : null}
+        <CardContent><Stack spacing={2}>
+        <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}><Box sx={{ flex: 1 }}><Typography variant="h6">{snapshot?.info.displayName || device.config.displayName || device.config.host}</Typography><Typography variant="body2" color="text.secondary">{productName || `${device.config.host}:${device.config.port}`}</Typography></Box>{image ? null : <Chip color={device.health.reachable ? 'success' : 'error'} size="small" label={device.health.reachable ? 'Online' : 'Offline'} />}</Stack>
         {device.health.reachable && light && capabilities ? <>
             {capabilities.power ? <ControlRow icon={<LightModeIcon />} label="Power"><Switch checked={light.on === 1} onChange={event => void setValue('on', event.target.checked)} /></ControlRow> : null}
             {capabilities.brightness ? <ControlRow icon={<BoltIcon />} label={`Brightness ${Math.round(light.brightness ?? 0)}%`}><Slider aria-label="Brightness" value={light.brightness ?? 0} min={0} max={100} onChangeCommitted={(_, value) => void setValue('brightness', Array.isArray(value) ? value[0] : value)} /></ControlRow> : null}
@@ -165,6 +177,15 @@ function DeviceCard({ namespace, device, socket, onCommand, onError }: DeviceCar
         </> : <Alert severity="warning">{device.health.lastError || 'Device is currently unreachable.'}</Alert>}
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}><Typography variant="caption" color="text.secondary">{device.health.latencyMs !== undefined ? `${device.health.latencyMs} ms` : 'No latency sample'}{snapshot?.info.firmwareVersion ? ` · FW ${snapshot.info.firmwareVersion}` : ''}</Typography><Stack direction="row"><Tooltip title="Identify"><span><IconButton disabled={!device.health.reachable || !capabilities?.identify} aria-label="Identify device" onClick={() => run('identifyDevice')}><LightModeIcon /></IconButton></span></Tooltip><Tooltip title="Reconnect"><IconButton aria-label="Reconnect device" onClick={() => run('reconnectDevice')}><RefreshIcon /></IconButton></Tooltip></Stack></Stack>
     </Stack></CardContent></Card>;
+}
+
+function deviceImage(productName: string | undefined): string | undefined {
+    const normalized = productName
+        ?.trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    return normalized && DEVICE_IMAGE_NAMES.has(normalized) ? normalized : undefined;
 }
 
 function ControlRow({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }): React.JSX.Element {
