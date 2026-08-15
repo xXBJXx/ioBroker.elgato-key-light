@@ -6,6 +6,7 @@ import { ElgatoDiscovery } from './elgato/ElgatoDiscovery';
 import { kelvinToMired, parseHex, parseRgb, rgbToHs } from './elgato/conversions';
 import { ElgatoError } from './elgato/errors';
 import type { ElgatoSnapshot, LightUpdate } from './elgato/types';
+import { normalizeConfiguration, reconcileConfigurations } from './ioBroker/configuration';
 import { StateRepository } from './ioBroker/StateRepository';
 
 class ElgatoKeyLight extends utils.Adapter {
@@ -257,14 +258,30 @@ class ElgatoKeyLight extends utils.Adapter {
     }
 
     private async removeDevice(payload: Record<string, unknown>): Promise<{ removed: boolean }> {
-        const id = requiredString(payload.id, 'id');
-        const removed = await this.manager!.remove(id);
-        if (removed) {
+        const configuredBefore = Array.isArray(this.config.devices)
+            ? this.config.devices.map(config => normalizeConfiguration(config))
+            : [];
+        const requestedId = optionalString(payload.id);
+        const requestedHost = optionalString(payload.host ?? payload.ip);
+        const requestedPort = payload.port === undefined ? undefined : numberInRange(payload.port, 1, 65_535, 'Port');
+        const matches = (config: ConfiguredDevice): boolean =>
+            (requestedId !== undefined && config.serialNumber === requestedId) ||
+            (requestedHost !== undefined && config.host === requestedHost && config.port === (requestedPort ?? 9123));
+        const configuredMatch = configuredBefore.find(matches);
+        const runtimeMatch = this.manager!.views().find(view => requestedId === view.health.id || matches(view.config));
+        const id = requestedId ?? configuredMatch?.serialNumber ?? runtimeMatch?.health.id;
+        const removedFromRuntime = id === undefined ? false : await this.manager!.remove(id);
+        const remaining = configuredBefore.filter(config => !matches(config));
+        const removedFromConfiguration = remaining.length !== configuredBefore.length;
+        if (removedFromConfiguration) {
+            await this.persistConfigurations(remaining);
+        }
+        if (id !== undefined && (removedFromRuntime || removedFromConfiguration)) {
             await this.states.removeDevice(id);
         }
         await this.updateConnectionStates();
         await this.updateDeviceSummary();
-        return { removed };
+        return { removed: removedFromRuntime || removedFromConfiguration };
     }
 
     private diagnostics(): Record<string, unknown> {
@@ -278,28 +295,18 @@ class ElgatoKeyLight extends utils.Adapter {
     }
 
     private async loadConfigurations(): Promise<ConfiguredDevice[]> {
-        const configured = (this.config.devices ?? []).map(config => normalizeConfiguration(config));
-        const legacyObjects = await this.getDevicesAsync();
-        const legacy: ConfiguredDevice[] = [];
-        for (const object of legacyObjects) {
-            const native = object.native as Record<string, unknown>;
-            const oldDevice = asOptionalRecord(native.device);
-            const host = oldDevice?.ip ?? native.ip ?? native.host;
-            const port = oldDevice?.port ?? native.port ?? 9123;
-            if (typeof host !== 'string' || typeof port !== 'number') {
-                continue;
-            }
-            const oldInfo = asOptionalRecord(oldDevice?.info);
-            legacy.push({
-                host,
-                port,
-                ...(typeof oldInfo?.serialNumber === 'string' ? { serialNumber: oldInfo.serialNumber } : {}),
-                ...(typeof oldInfo?.displayName === 'string' ? { displayName: oldInfo.displayName } : {}),
-                source: 'legacy',
-                enabled: true,
-            });
+        const reconciliation = reconcileConfigurations(
+            Array.isArray(this.config.devices) ? this.config.devices : undefined,
+            await this.getDevicesAsync(),
+            this.namespace,
+        );
+        for (const staleObjectId of reconciliation.staleObjectIds) {
+            await this.states.removeDevice(staleObjectId);
         }
-        return deduplicate([...configured, ...legacy]);
+        if (reconciliation.migrated) {
+            await this.persistConfigurations(reconciliation.devices);
+        }
+        return reconciliation.devices;
     }
 
     private async persistConfigurations(devices: ConfiguredDevice[]): Promise<void> {
@@ -310,6 +317,7 @@ class ElgatoKeyLight extends utils.Adapter {
         }
         object.native = { ...object.native, devices };
         await this.setForeignObjectAsync(id, object);
+        this.config.devices = devices;
     }
 
     private async ensureServiceStates(): Promise<void> {
@@ -394,27 +402,6 @@ function configFromPayload(payload: Record<string, unknown>, source: ConfiguredD
     };
 }
 
-function normalizeConfiguration(config: ConfiguredDevice): ConfiguredDevice {
-    return {
-        ...config,
-        port: config.port ?? 9123,
-        source: config.source ?? 'manual',
-        enabled: config.enabled !== false,
-    };
-}
-
-function deduplicate(configurations: ConfiguredDevice[]): ConfiguredDevice[] {
-    const seen = new Set<string>();
-    return configurations.filter(config => {
-        const key = config.serialNumber || `${config.host}:${config.port}`;
-        if (seen.has(key)) {
-            return false;
-        }
-        seen.add(key);
-        return true;
-    });
-}
-
 function asRecord(value: unknown): Record<string, unknown> {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
         return {};
@@ -422,17 +409,15 @@ function asRecord(value: unknown): Record<string, unknown> {
     return value as Record<string, unknown>;
 }
 
-function asOptionalRecord(value: unknown): Record<string, unknown> | undefined {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-        ? (value as Record<string, unknown>)
-        : undefined;
-}
-
 function requiredString(value: unknown, name: string): string {
     if (typeof value !== 'string' || value.trim() === '') {
         throw new TypeError(`${name} is required.`);
     }
     return value.trim();
+}
+
+function optionalString(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
 
 function numberInRange(value: unknown, minimum: number, maximum: number, name: string): number {

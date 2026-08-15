@@ -5,6 +5,7 @@ export default [
         ignores: [
             '.dev-server/',
             '.git/',
+            '.test-build/',
             '.vscode/',
             'admin/',
             'build/',

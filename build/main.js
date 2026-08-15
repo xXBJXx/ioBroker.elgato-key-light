@@ -38,6 +38,7 @@ const DeviceManager_1 = require("./device-manager/DeviceManager");
 const ElgatoDiscovery_1 = require("./elgato/ElgatoDiscovery");
 const conversions_1 = require("./elgato/conversions");
 const errors_1 = require("./elgato/errors");
+const configuration_1 = require("./ioBroker/configuration");
 const StateRepository_1 = require("./ioBroker/StateRepository");
 class ElgatoKeyLight extends utils.Adapter {
     manager;
@@ -259,14 +260,29 @@ class ElgatoKeyLight extends utils.Adapter {
         return legacy ? { error: false, message: 'success' } : sanitizeSnapshot(snapshot);
     }
     async removeDevice(payload) {
-        const id = requiredString(payload.id, 'id');
-        const removed = await this.manager.remove(id);
-        if (removed) {
+        const configuredBefore = Array.isArray(this.config.devices)
+            ? this.config.devices.map(config => (0, configuration_1.normalizeConfiguration)(config))
+            : [];
+        const requestedId = optionalString(payload.id);
+        const requestedHost = optionalString(payload.host ?? payload.ip);
+        const requestedPort = payload.port === undefined ? undefined : numberInRange(payload.port, 1, 65_535, 'Port');
+        const matches = (config) => (requestedId !== undefined && config.serialNumber === requestedId) ||
+            (requestedHost !== undefined && config.host === requestedHost && config.port === (requestedPort ?? 9123));
+        const configuredMatch = configuredBefore.find(matches);
+        const runtimeMatch = this.manager.views().find(view => requestedId === view.health.id || matches(view.config));
+        const id = requestedId ?? configuredMatch?.serialNumber ?? runtimeMatch?.health.id;
+        const removedFromRuntime = id === undefined ? false : await this.manager.remove(id);
+        const remaining = configuredBefore.filter(config => !matches(config));
+        const removedFromConfiguration = remaining.length !== configuredBefore.length;
+        if (removedFromConfiguration) {
+            await this.persistConfigurations(remaining);
+        }
+        if (id !== undefined && (removedFromRuntime || removedFromConfiguration)) {
             await this.states.removeDevice(id);
         }
         await this.updateConnectionStates();
         await this.updateDeviceSummary();
-        return { removed };
+        return { removed: removedFromRuntime || removedFromConfiguration };
     }
     diagnostics() {
         return {
@@ -278,28 +294,14 @@ class ElgatoKeyLight extends utils.Adapter {
         };
     }
     async loadConfigurations() {
-        const configured = (this.config.devices ?? []).map(config => normalizeConfiguration(config));
-        const legacyObjects = await this.getDevicesAsync();
-        const legacy = [];
-        for (const object of legacyObjects) {
-            const native = object.native;
-            const oldDevice = asOptionalRecord(native.device);
-            const host = oldDevice?.ip ?? native.ip ?? native.host;
-            const port = oldDevice?.port ?? native.port ?? 9123;
-            if (typeof host !== 'string' || typeof port !== 'number') {
-                continue;
-            }
-            const oldInfo = asOptionalRecord(oldDevice?.info);
-            legacy.push({
-                host,
-                port,
-                ...(typeof oldInfo?.serialNumber === 'string' ? { serialNumber: oldInfo.serialNumber } : {}),
-                ...(typeof oldInfo?.displayName === 'string' ? { displayName: oldInfo.displayName } : {}),
-                source: 'legacy',
-                enabled: true,
-            });
+        const reconciliation = (0, configuration_1.reconcileConfigurations)(Array.isArray(this.config.devices) ? this.config.devices : undefined, await this.getDevicesAsync(), this.namespace);
+        for (const staleObjectId of reconciliation.staleObjectIds) {
+            await this.states.removeDevice(staleObjectId);
         }
-        return deduplicate([...configured, ...legacy]);
+        if (reconciliation.migrated) {
+            await this.persistConfigurations(reconciliation.devices);
+        }
+        return reconciliation.devices;
     }
     async persistConfigurations(devices) {
         const id = `system.adapter.${this.namespace}`;
@@ -309,6 +311,7 @@ class ElgatoKeyLight extends utils.Adapter {
         }
         object.native = { ...object.native, devices };
         await this.setForeignObjectAsync(id, object);
+        this.config.devices = devices;
     }
     async ensureServiceStates() {
         await this.extendObjectAsync('info.connections', {
@@ -387,41 +390,20 @@ function configFromPayload(payload, source) {
         enabled: payload.enabled === undefined ? true : payload.enabled === true,
     };
 }
-function normalizeConfiguration(config) {
-    return {
-        ...config,
-        port: config.port ?? 9123,
-        source: config.source ?? 'manual',
-        enabled: config.enabled !== false,
-    };
-}
-function deduplicate(configurations) {
-    const seen = new Set();
-    return configurations.filter(config => {
-        const key = config.serialNumber || `${config.host}:${config.port}`;
-        if (seen.has(key)) {
-            return false;
-        }
-        seen.add(key);
-        return true;
-    });
-}
 function asRecord(value) {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {
         return {};
     }
     return value;
 }
-function asOptionalRecord(value) {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-        ? value
-        : undefined;
-}
 function requiredString(value, name) {
     if (typeof value !== 'string' || value.trim() === '') {
         throw new TypeError(`${name} is required.`);
     }
     return value.trim();
+}
+function optionalString(value) {
+    return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
 function numberInRange(value, minimum, maximum, name) {
     if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum) {

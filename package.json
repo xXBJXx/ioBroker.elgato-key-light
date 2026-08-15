@@ -68,7 +68,7 @@
     "build:admin": "npm --prefix src-admin run build",
     "build:tab": "npm --prefix src-tab run build",
     "watch:ts": "tsc -p tsconfig.build.json --watch",
-    "test:ts": "tsc -p tsconfig.test.json && node --test .test-build/elgato/parsers.test.js .test-build/elgato/ElgatoClient.test.js .test-build/device-manager/DeviceManager.test.js",
+    "test:ts": "tsc -p tsconfig.test.json && node --test .test-build/elgato/parsers.test.js .test-build/elgato/ElgatoClient.test.js .test-build/device-manager/DeviceManager.test.js .test-build/ioBroker/configuration.test.js",
     "test:package": "mocha test/package --exit",
     "test:integration": "mocha test/integration --exit",
     "test": "npm run test:ts && npm run test:package",

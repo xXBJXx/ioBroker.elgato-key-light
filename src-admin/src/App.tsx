@@ -81,6 +81,22 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
         }
     };
 
+    private removeDevice = async (device: DeviceConfig, devices: DeviceConfig[]): Promise<void> => {
+        this.updateNativeValue('devices', devices);
+        try {
+            const response = await this.socket.sendTo<Reply<{ removed: boolean }>>(this.instanceId, 'removeDevice', {
+                ...(device.serialNumber ? { id: device.serialNumber } : {}),
+                host: device.host,
+                port: device.port,
+            });
+            if (!response.success) throw new Error(response.message || 'Could not remove device');
+        } catch (error) {
+            this.showError(
+                `${error instanceof Error ? error.message : String(error)} Save the configuration to apply the removal.`,
+            );
+        }
+    };
+
     public render(): React.JSX.Element {
         if (!this.state.loaded) {
             return <StyledEngineProvider injectFirst><ThemeProvider theme={this.state.theme}><Loader themeType={this.state.themeType} /></ThemeProvider></StyledEngineProvider>;
@@ -96,6 +112,7 @@ export default class App extends GenericApp<GenericAppProps, AppState> {
                             discovering={this.state.discovering}
                             discovered={this.state.discovered}
                             onDiscover={this.discover}
+                            onRemoveDevice={this.removeDevice}
                             onChange={(key, value) => this.updateNativeValue(key, value)}
                             onError={message => this.showError(message)}
                         />
@@ -114,6 +131,7 @@ interface PanelProps {
     discovering: boolean;
     discovered: DiscoveredDevice[];
     onDiscover(): void;
+    onRemoveDevice(device: DeviceConfig, devices: DeviceConfig[]): Promise<void>;
     onChange(key: string, value: unknown): void;
     onError(message: string): void;
 }
@@ -166,7 +184,7 @@ function ConfigPanel(props: PanelProps): React.JSX.Element {
                 <Typography variant="h6">Manual device</Typography><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label="Private IP or local hostname" value={host} onChange={event => setHost(event.target.value)} /><TextField label="Port" type="number" value={port} onChange={event => setPort(Number(event.target.value))} /><Button disabled={!host || testing} onClick={test}>Test</Button><Button variant="contained" disabled={!host} startIcon={<AddIcon />} onClick={() => add({ host, port, source: 'manual', enabled: true })}>Add</Button></Stack>
             </Stack></CardContent></Card>
 
-            <Card variant="outlined"><CardContent><Typography variant="h6" gutterBottom>Configured devices</Typography><Stack spacing={1}>{devices.length === 0 ? <Alert severity="warning">No device configured.</Alert> : devices.map((device, index) => <Stack className="device-row" direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { sm: 'center' }, gap: 1 }} key={`${device.host}:${device.port}`}><Box sx={{ flex: 1 }}><Typography>{device.displayName || device.host}</Typography><Stack direction="row" spacing={1}><Chip size="small" label={device.source} /><Typography variant="body2" color="text.secondary">{device.host}:{device.port}</Typography></Stack></Box><FormControlLabel control={<Switch checked={device.enabled} onChange={event => props.onChange(`devices.${index}.enabled`, event.target.checked)} />} label="Enabled" /><IconButton aria-label={`Remove ${device.displayName || device.host}`} onClick={() => props.onChange('devices', devices.filter((_, itemIndex) => itemIndex !== index))}><DeleteOutlineIcon /></IconButton></Stack>)}</Stack></CardContent></Card>
+            <Card variant="outlined"><CardContent><Typography variant="h6" gutterBottom>Configured devices</Typography><Stack spacing={1}>{devices.length === 0 ? <Alert severity="warning">No device configured.</Alert> : devices.map((device, index) => <Stack className="device-row" direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { sm: 'center' }, gap: 1 }} key={`${device.host}:${device.port}`}><Box sx={{ flex: 1 }}><Typography>{device.displayName || device.host}</Typography><Stack direction="row" spacing={1}><Chip size="small" label={device.source} /><Typography variant="body2" color="text.secondary">{device.host}:{device.port}</Typography></Stack></Box><FormControlLabel control={<Switch checked={device.enabled} onChange={event => props.onChange(`devices.${index}.enabled`, event.target.checked)} />} label="Enabled" /><IconButton aria-label={`Remove ${device.displayName || device.host}`} onClick={() => void props.onRemoveDevice(device, devices.filter((_, itemIndex) => itemIndex !== index))}><DeleteOutlineIcon /></IconButton></Stack>)}</Stack></CardContent></Card>
         </Stack>
     );
 }
