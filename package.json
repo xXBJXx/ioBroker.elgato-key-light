@@ -55,7 +55,8 @@
   "files": [
     "admin/**/*.{html,css,png,svg,jpg,js,json}",
     "build/",
-    "docs/",
+    "docs/ELGATO_API.md",
+    "docs/MIGRATION.md",
     "io-package.json",
     "LICENSE"
   ],
