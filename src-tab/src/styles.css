@@ -1,6 +1,8 @@
-html, body, #root { min-height: 100%; margin: 0; }
+html, body, #root { height: 100%; min-height: 0; margin: 0; }
+html, body { overflow: hidden; }
 body { font-family: Inter, Roboto, Arial, sans-serif; }
-.dashboard { min-height: 100vh; padding: 24px; }
+#root { overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; }
+.dashboard { box-sizing: border-box; min-height: 100%; padding: 24px; }
 .toolbar { margin: 0 auto 24px; max-width: 1440px; }
 .dashboard > .MuiGrid-root, .dashboard > .MuiAlert-root { max-width: 1440px; margin-left: auto; margin-right: auto; }
 .center { display: grid; min-height: 45vh; place-items: center; }
