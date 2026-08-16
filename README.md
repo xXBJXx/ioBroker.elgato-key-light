@@ -232,6 +232,8 @@ Older entries: [CHANGELOG_OLD.md](CHANGELOG_OLD.md)
 
 Created by xXBJXx and maintained by ioBroker Community Adapters. Elgato is a trademark of Corsair GmbH; this project is not affiliated with or endorsed by Elgato/Corsair.
 
-Copyright (c) 2024-2026 iobroker-community-adapters and 2023 xXBJXx
+Copyright (c) 2024-2026 iobroker-community-adapters mcm57@gmx.at
+
+Copyright (c) 2023 xXBJXx issi.dev.iobroker@gmail.com
 
 Released under the MIT License. See [LICENSE](LICENSE).

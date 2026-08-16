@@ -232,6 +232,8 @@ Hardwaretests sind optional, standardmäßig rein lesend und dürfen nicht in CI
 
 Erstellt von xXBJXx und gepflegt von ioBroker Community Adapters. Elgato ist eine Marke der Corsair GmbH; dieses Projekt ist nicht mit Elgato/Corsair verbunden und wird nicht von Elgato/Corsair unterstützt.
 
-Copyright (c) 2024-2026 iobroker-community-adapters und 2023 xXBJXx
+Copyright (c) 2024-2026 iobroker-community-adapters mcm57@gmx.at
+
+Copyright (c) 2023 xXBJXx issi.dev.iobroker@gmail.com
 
 Veröffentlicht unter der MIT-Lizenz. Siehe [LICENSE](LICENSE).
