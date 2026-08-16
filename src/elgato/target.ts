@@ -67,7 +67,7 @@ export function normalizeTarget(hostInput: string, portInput: number = DEFAULT_P
 export function targetBaseUrl(target: ElgatoTarget): string {
     const addressWithoutZone = target.host.split('%', 1)[0] ?? target.host;
     if (isIP(addressWithoutZone) === 6) {
-        return `http://[${target.host.replace('%', '%25')}]:${target.port}`;
+        return `http://[${target.host.replace(/%/g, '%25')}]:${target.port}`;
     }
     return `http://${target.host}:${target.port}`;
 }

@@ -107,6 +107,10 @@ describe('Elgato target validation', () => {
         assert.deepEqual(normalizeTarget('192.168.1.20'), { host: '192.168.1.20', port: 9123 });
         assert.deepEqual(normalizeTarget('key-light.local', 9124), { host: 'key-light.local', port: 9124 });
         assert.equal(targetBaseUrl(normalizeTarget('fd00::20')), 'http://[fd00::20]:9123');
+        assert.equal(
+            targetBaseUrl({ host: 'fe80::20%Ethernet%1', port: 9123 }),
+            'http://[fe80::20%25Ethernet%251]:9123',
+        );
     });
 
     it('rejects URLs, public IPs, loopback and invalid ports', () => {

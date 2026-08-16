@@ -51,7 +51,7 @@ function normalizeTarget(hostInput, portInput = DEFAULT_PORT) {
 function targetBaseUrl(target) {
     const addressWithoutZone = target.host.split('%', 1)[0] ?? target.host;
     if ((0, node_net_1.isIP)(addressWithoutZone) === 6) {
-        return `http://[${target.host.replace('%', '%25')}]:${target.port}`;
+        return `http://[${target.host.replace(/%/g, '%25')}]:${target.port}`;
     }
     return `http://${target.host}:${target.port}`;
 }
