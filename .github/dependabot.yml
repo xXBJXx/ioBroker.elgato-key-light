@@ -6,7 +6,10 @@ version: 2
 updates:
 
   - package-ecosystem: 'npm'
-    directory: '/'
+    directories:
+      - '/'
+      - '/src-admin'
+      - '/src-tab'
     schedule:
       interval: 'cron'
       timezone: 'Europe/Berlin'
@@ -15,6 +18,9 @@ updates:
     versioning-strategy: 'increase'
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: 'github-actions'
     directory: '/'

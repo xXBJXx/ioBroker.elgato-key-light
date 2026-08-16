@@ -26,7 +26,7 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: ioBroker/testing-action-check@v1
+            - uses: ioBroker/testing-action-check@v2
               with:
                   node-version: '24.x'
                   # Uncomment the following line if your adapter cannot be installed using 'npm ci'
@@ -42,7 +42,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                node-version: [22.x, 24.x]
+                node-version: [22.x, 24.x, 26.x]
                 os: [ubuntu-latest, windows-latest, macos-latest]
 
         steps:
@@ -53,11 +53,7 @@ jobs:
                   # Uncomment the following line if your adapter cannot be installed using 'npm ci'
                   # install-command: 'npm install'
                   build: true
-    # TODO: To enable automatic npm releases, create a token on npmjs.org
-    # Enter this token as a GitHub secret (with name NPM_TOKEN) in the repository options
-    # Then uncomment the following block:
-
-    #  # Deploys the final package to NPM
+    # Deploys the final package to npm using Trusted Publishing
     deploy:
         needs: [check-and-lint, adapter-tests]
 
@@ -81,7 +77,6 @@ jobs:
                   # Uncomment the following line if your adapter cannot be installed using 'npm ci'
                   # install-command: 'npm install'
                   build: true
-                  # npm-token: ${{ secrets.NPM_TOKEN }}  # Commented out for migration to Trusted Publishing
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
 #                  # When using Sentry for error reporting, Sentry can be informed about new releases

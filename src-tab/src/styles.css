@@ -1,0 +1,61 @@
+html, body, #root { height: 100%; min-height: 0; margin: 0; }
+html, body { overflow: hidden; }
+body { font-family: Inter, Roboto, Arial, sans-serif; }
+#root { overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; }
+.dashboard { box-sizing: border-box; min-height: 100%; padding: 28px; background-image: radial-gradient(circle at 85% 0%, rgba(25, 118, 210, .08), transparent 32%); }
+.toolbar { margin: 0 auto 28px; max-width: 1440px; }
+.dashboard > .MuiGrid-root, .dashboard > .MuiAlert-root { max-width: 1440px; margin-left: auto; margin-right: auto; }
+.center { display: grid; min-height: 45vh; place-items: center; }
+.device-card { position: relative; display: flex; height: 100%; min-height: 520px; flex-direction: column; overflow: hidden; border: 1px solid rgba(127, 127, 127, .18); border-radius: 20px; background-image: linear-gradient(145deg, rgba(255, 255, 255, .025), transparent 42%); box-shadow: 0 14px 40px rgba(0, 0, 0, .14); transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+.device-card::before { position: absolute; z-index: 2; top: 0; right: 28px; left: 28px; height: 4px; border-radius: 0 0 5px 5px; background: linear-gradient(90deg, #2e7d32, #43a047); content: ''; }
+.device-card.offline::before { background: #d32f2f; }
+.device-card:hover { transform: translateY(-3px); border-color: rgba(25, 118, 210, .38); box-shadow: 0 20px 50px rgba(0, 0, 0, .2); }
+.device-hero { position: relative; display: grid; min-height: 176px; flex: 0 0 176px; place-items: center; overflow: hidden; border-bottom: 1px solid rgba(127, 127, 127, .12); background: linear-gradient(145deg, rgba(25, 118, 210, .12), rgba(25, 118, 210, .025)); }
+.hero-glow { position: absolute; width: 240px; height: 110px; border-radius: 50%; background: rgba(25, 118, 210, .2); filter: blur(45px); transform: translateY(48px); }
+.device-image { z-index: 1; display: block; width: min(72%, 265px); height: 158px; object-fit: contain; object-position: center; filter: drop-shadow(0 18px 18px rgba(0, 0, 0, .32)); transition: transform 180ms ease; }
+.device-placeholder { z-index: 1; color: rgba(127, 127, 127, .55); font-size: 82px !important; }
+.device-card:hover .device-image { transform: scale(1.045); }
+.device-status { position: absolute; z-index: 3; top: 16px; right: 16px; font-weight: 600; box-shadow: 0 5px 16px rgba(0, 0, 0, .22); }
+.device-card-content { display: flex; width: 100%; flex: 1; box-sizing: border-box; padding: 22px !important; }
+.device-card-content > .MuiStack-root { width: 100%; }
+.device-heading { min-width: 0; }
+.device-name { overflow: hidden; font-weight: 650 !important; letter-spacing: -.01em !important; text-overflow: ellipsis; white-space: nowrap; }
+.device-meta { min-height: 24px; flex-wrap: wrap; }
+.device-meta .MuiChip-root { border-color: rgba(127, 127, 127, .2); color: inherit; background: rgba(127, 127, 127, .06); }
+.device-meta .MuiChip-icon { color: #5c8fba; }
+.controls-surface { width: 100%; box-sizing: border-box; padding: 16px; border: 1px solid rgba(127, 127, 127, .14); border-radius: 14px; background: rgba(127, 127, 127, .045); }
+.control-row { align-items: flex-start; min-height: 44px; }
+.control-row.inline { align-items: center; }
+.control-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px; color: #65a9df; place-items: center; background: rgba(25, 118, 210, .11); }
+.control-icon .MuiSvgIcon-root { font-size: 19px; }
+.control-content { min-width: 0; flex: 1; }
+.control-row.inline .control-content { display: flex; align-items: center; justify-content: space-between; }
+.control-label { margin-bottom: 4px !important; font-weight: 550 !important; }
+.control-row.inline .control-label { margin-bottom: 0 !important; }
+.control-content .MuiSlider-root { display: block; padding: 8px 0 5px; }
+.color-input { width: 100%; height: 42px; overflow: hidden; border: 1px solid rgba(127, 127, 127, .25); border-radius: 10px; padding: 3px; background: transparent; cursor: pointer; }
+.battery-panel { padding: 11px 12px; border-radius: 11px; background: rgba(76, 175, 80, .08); }
+.battery-track { height: 5px; margin-top: 9px; overflow: hidden; border-radius: 4px; background: rgba(127, 127, 127, .18); }
+.battery-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2e7d32, #66bb6a); transition: width 180ms ease; }
+.offline-alert { border-radius: 11px !important; }
+.device-footer { width: 100%; min-height: 42px; box-sizing: border-box; margin-top: auto !important; padding-top: 14px; border-top: 1px solid rgba(127, 127, 127, .14); }
+.poll-status { min-width: 0; color: rgba(127, 127, 127, .95); }
+.poll-status .MuiTypography-root { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-action { border: 1px solid rgba(127, 127, 127, .18) !important; background: rgba(127, 127, 127, .06) !important; }
+.card-action:hover { border-color: rgba(25, 118, 210, .45) !important; background: rgba(25, 118, 210, .12) !important; }
+.dialog-icon { display: grid; width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; color: #64b5f6; place-items: center; background: rgba(25, 118, 210, .12); }
+.info-section-title { display: block; margin-bottom: 7px !important; font-weight: 700 !important; letter-spacing: .08em !important; }
+.device-info-grid { display: grid; grid-template-columns: minmax(130px, .8fr) minmax(0, 1.4fr); gap: 8px 18px; }
+.info-value { min-width: 0; overflow-wrap: anywhere; font-weight: 550 !important; }
+.info-value.mono, .api-endpoint { font-family: "Roboto Mono", Consolas, monospace; }
+.api-endpoint { display: block; padding: 8px 10px; border: 1px solid rgba(127, 127, 127, .16); border-radius: 8px; color: inherit; background: rgba(127, 127, 127, .07); font-size: 12px; }
+.diagnostics { white-space: pre-wrap; word-break: break-word; font-size: 12px; }
+@media (max-width: 600px) {
+    .dashboard { padding: 18px 12px; }
+    .device-card { min-height: 0; border-radius: 16px; }
+    .device-hero { min-height: 150px; flex-basis: 150px; }
+    .device-image { height: 138px; }
+    .device-card-content { padding: 18px !important; }
+    .device-info-grid { grid-template-columns: 1fr; gap: 3px; }
+    .info-value { margin-bottom: 7px !important; }
+}

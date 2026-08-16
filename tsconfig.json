@@ -1,39 +1,24 @@
-// Root tsconfig to set the settings and power editor support for all TS files
 {
-  // To update the compilation target, install a different version of @tsconfig/node... and reference it here
-  // https://github.com/tsconfig/bases#node-16-tsconfigjson
-  "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
-	// do not compile anything, this file is just to configure type checking
-	// the compilation is configured in tsconfig.build.json
-	"noEmit": true,
-
-	// check JS files, but do not compile them => tsconfig.build.json
-	"allowJs": true,
-	"checkJs": true,
-
-	"noEmitOnError": true,
-	"outDir": "./build/",
-	"removeComments": false,
-
-	// This is necessary for the automatic typing of the adapter config
-	"resolveJsonModule": true,
-
-	// If you want to disable the stricter type checks (not recommended), uncomment the following line
-	 "strict": true,
-	// And enable some of those features for more fine-grained control
-	// "strictNullChecks": true,
-	// "strictPropertyInitialization": true,
-	// "strictBindCallApply": true,
-	// "noImplicitAny": true,
-	// "noUnusedLocals": true,
-	// "noUnusedParameters": true,
-	// Uncomment this if you want the old behavior of catch variables being `any`
-	 "useUnknownInCatchVariables": false,
-
-	"sourceMap": true,
-	"inlineSourceMap": false
+    "target": "ES2023",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "lib": ["ES2023"],
+    "types": ["node", "mocha", "@iobroker/types"],
+    "noEmit": true,
+    "noEmitOnError": true,
+    "allowJs": true,
+    "checkJs": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "useUnknownInCatchVariables": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+    "skipLibCheck": true,
+    "sourceMap": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["build/**", "node_modules/**", "widgets/**"]
+  "exclude": ["build/**", "node_modules/**", "src-admin/**", "src-tab/**"]
 }
