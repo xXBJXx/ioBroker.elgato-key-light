@@ -3,11 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DeviceManager = void 0;
 const ElgatoClient_1 = require("../elgato/ElgatoClient");
 const target_1 = require("../elgato/target");
+const timers_1 = require("../timers");
 class DeviceManager {
     events;
     logger;
     options;
     devices = new Map();
+    timers;
     timer;
     stopped = true;
     /**
@@ -20,6 +22,7 @@ class DeviceManager {
         if (options.pollIntervalMs < 1_000) {
             throw new RangeError('Poll interval must be at least 1000 ms.');
         }
+        this.timers = options.timers ?? timers_1.systemTimers;
     }
     /**
      *
@@ -35,13 +38,13 @@ class DeviceManager {
      */
     stop() {
         this.stopped = true;
-        if (this.timer) {
-            clearTimeout(this.timer);
+        if (this.timer !== undefined) {
+            this.timers.clear(this.timer);
         }
         this.timer = undefined;
         for (const runtime of this.devices.values()) {
             if (runtime.pendingWrite) {
-                clearTimeout(runtime.pendingWrite.timer);
+                this.timers.clear(runtime.pendingWrite.timer);
                 runtime.pendingWrite.reject(new Error('Device manager stopped.'));
             }
         }
@@ -123,7 +126,7 @@ class DeviceManager {
             return false;
         }
         if (runtime.pendingWrite) {
-            clearTimeout(runtime.pendingWrite.timer);
+            this.timers.clear(runtime.pendingWrite.timer);
             runtime.pendingWrite.reject(new Error('Device removed.'));
         }
         this.devices.delete(id);
@@ -177,7 +180,7 @@ class DeviceManager {
         const runtime = this.requireDevice(id);
         return new Promise((resolve, reject) => {
             if (runtime.pendingWrite) {
-                clearTimeout(runtime.pendingWrite.timer);
+                this.timers.clear(runtime.pendingWrite.timer);
                 runtime.pendingWrite.update = { ...runtime.pendingWrite.update, ...update };
                 const previousResolve = runtime.pendingWrite.resolve;
                 const previousReject = runtime.pendingWrite.reject;
@@ -241,7 +244,7 @@ class DeviceManager {
         return [...this.devices.values()].map(runtime => ({ ...runtime.config }));
     }
     createWriteTimer(runtime) {
-        return setTimeout(() => {
+        return this.timers.set(() => {
             const pending = runtime.pendingWrite;
             runtime.pendingWrite = undefined;
             if (!pending) {
@@ -268,11 +271,11 @@ class DeviceManager {
         if (this.stopped) {
             return;
         }
-        if (this.timer) {
-            clearTimeout(this.timer);
+        if (this.timer !== undefined) {
+            this.timers.clear(this.timer);
         }
         const next = Math.min(...[...this.devices.values()].map(runtime => Date.parse(runtime.health.nextPollAt)), Date.now() + this.options.pollIntervalMs);
-        this.timer = setTimeout(() => void this.pollDue(), Math.max(250, next - Date.now()));
+        this.timer = this.timers.set(() => void this.pollDue(), Math.max(250, next - Date.now()));
     }
     async pollDue() {
         if (this.stopped) {

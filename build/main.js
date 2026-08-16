@@ -50,6 +50,7 @@ class ElgatoKeyLight extends utils.Adapter {
         super({ ...options, name: 'elgato-key-light' });
         this.discovery = new ElgatoDiscovery_1.ElgatoDiscovery(this.log, {
             ...(this.config.discoveryInterface ? { interface: this.config.discoveryInterface } : {}),
+            timers: this.timerController(),
         });
         this.states = new StateRepository_1.StateRepository(this);
         this.on('ready', () => void this.onReady());
@@ -71,6 +72,7 @@ class ElgatoKeyLight extends utils.Adapter {
             requestTimeoutMs: clamp(this.config.requestTimeoutMs ?? 3_000, 250, 30_000),
             maxBackoffMs: clamp(this.config.maxBackoffSeconds ?? 300, 5, 3_600) * 1_000,
             writeDebounceMs: clamp(this.config.writeDebounceMs ?? 200, 0, 2_000),
+            timers: this.timerController(),
         });
         await this.manager.start(configurations);
         await this.updateConnectionStates();
@@ -221,6 +223,7 @@ class ElgatoKeyLight extends utils.Adapter {
             requestTimeoutMs: clamp(this.config.requestTimeoutMs ?? 3_000, 250, 30_000),
             maxBackoffMs: 60_000,
             writeDebounceMs: 0,
+            timers: this.timerController(),
         });
         try {
             return sanitizeSnapshot(await temporary.add(config, false));
@@ -357,6 +360,12 @@ class ElgatoKeyLight extends utils.Adapter {
         else {
             this.log.error(message);
         }
+    }
+    timerController() {
+        return {
+            set: (callback, delayMs) => this.setTimeout(callback, delayMs),
+            clear: handle => this.clearTimeout(handle),
+        };
     }
     async onUnload(callback) {
         this.unloading = true;

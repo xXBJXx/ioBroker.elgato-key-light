@@ -12,6 +12,7 @@ export declare class DeviceManager {
     private readonly logger;
     private readonly options;
     private readonly devices;
+    private readonly timers;
     private timer;
     private stopped;
     /**

@@ -1,6 +1,7 @@
 import { ElgatoClient, type ElgatoLogger } from '../elgato/ElgatoClient';
 import type { ElgatoSnapshot, LightUpdate } from '../elgato/types';
 import { normalizeTarget } from '../elgato/target';
+import { systemTimers, type TimerController } from '../timers';
 import type {
     ConfiguredDevice,
     DeviceClient,
@@ -12,7 +13,7 @@ import type {
 
 interface PendingWrite {
     update: LightUpdate;
-    timer: NodeJS.Timeout;
+    timer: unknown;
     resolve: (snapshot: ElgatoSnapshot) => void;
     reject: (error: unknown) => void;
 }
@@ -35,7 +36,8 @@ export interface DeviceManagerLogger extends ElgatoLogger {
 
 export class DeviceManager {
     private readonly devices = new Map<string, RuntimeDevice>();
-    private timer: NodeJS.Timeout | undefined;
+    private readonly timers: TimerController;
+    private timer: unknown;
     private stopped = true;
 
     /**
@@ -49,6 +51,7 @@ export class DeviceManager {
         if (options.pollIntervalMs < 1_000) {
             throw new RangeError('Poll interval must be at least 1000 ms.');
         }
+        this.timers = options.timers ?? systemTimers;
     }
 
     /**
@@ -68,13 +71,13 @@ export class DeviceManager {
      */
     public stop(): void {
         this.stopped = true;
-        if (this.timer) {
-            clearTimeout(this.timer);
+        if (this.timer !== undefined) {
+            this.timers.clear(this.timer);
         }
         this.timer = undefined;
         for (const runtime of this.devices.values()) {
             if (runtime.pendingWrite) {
-                clearTimeout(runtime.pendingWrite.timer);
+                this.timers.clear(runtime.pendingWrite.timer);
                 runtime.pendingWrite.reject(new Error('Device manager stopped.'));
             }
         }
@@ -173,7 +176,7 @@ export class DeviceManager {
             return false;
         }
         if (runtime.pendingWrite) {
-            clearTimeout(runtime.pendingWrite.timer);
+            this.timers.clear(runtime.pendingWrite.timer);
             runtime.pendingWrite.reject(new Error('Device removed.'));
         }
         this.devices.delete(id);
@@ -228,7 +231,7 @@ export class DeviceManager {
         const runtime = this.requireDevice(id);
         return new Promise<ElgatoSnapshot>((resolve, reject) => {
             if (runtime.pendingWrite) {
-                clearTimeout(runtime.pendingWrite.timer);
+                this.timers.clear(runtime.pendingWrite.timer);
                 runtime.pendingWrite.update = { ...runtime.pendingWrite.update, ...update };
                 const previousResolve = runtime.pendingWrite.resolve;
                 const previousReject = runtime.pendingWrite.reject;
@@ -297,8 +300,8 @@ export class DeviceManager {
         return [...this.devices.values()].map(runtime => ({ ...runtime.config }));
     }
 
-    private createWriteTimer(runtime: RuntimeDevice): NodeJS.Timeout {
-        return setTimeout(() => {
+    private createWriteTimer(runtime: RuntimeDevice): unknown {
+        return this.timers.set(() => {
             const pending = runtime.pendingWrite;
             runtime.pendingWrite = undefined;
             if (!pending) {
@@ -331,14 +334,14 @@ export class DeviceManager {
         if (this.stopped) {
             return;
         }
-        if (this.timer) {
-            clearTimeout(this.timer);
+        if (this.timer !== undefined) {
+            this.timers.clear(this.timer);
         }
         const next = Math.min(
             ...[...this.devices.values()].map(runtime => Date.parse(runtime.health.nextPollAt)),
             Date.now() + this.options.pollIntervalMs,
         );
-        this.timer = setTimeout(() => void this.pollDue(), Math.max(250, next - Date.now()));
+        this.timer = this.timers.set(() => void this.pollDue(), Math.max(250, next - Date.now()));
     }
 
     private async pollDue(): Promise<void> {
