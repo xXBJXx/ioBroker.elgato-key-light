@@ -10,17 +10,23 @@ exports.preferredDiscoveredHost = preferredDiscoveredHost;
 exports.mergeDiscoveredDevice = mergeDiscoveredDevice;
 const node_net_1 = require("node:net");
 const bonjour_service_1 = __importDefault(require("bonjour-service"));
+const timers_1 = require("../timers");
 class ElgatoDiscovery {
     logger;
     options;
     browser;
     bonjour;
+    timers;
+    waitTimer;
+    finishWait;
+    scanId = 0;
     /**
      *
      */
     constructor(logger, options = {}) {
         this.logger = logger;
         this.options = options;
+        this.timers = options.timers ?? timers_1.systemTimers;
     }
     /**
      *
@@ -30,6 +36,7 @@ class ElgatoDiscovery {
             throw new RangeError('Discovery timeout must be between 250 and 60000 ms.');
         }
         this.stop();
+        const scanId = ++this.scanId;
         const devices = new Map();
         const onError = (error) => {
             this.logger?.warn(`[ElgatoDiscovery] mDNS error: ${error.message}`);
@@ -49,18 +56,39 @@ class ElgatoDiscovery {
         this.browser.on('txt-update', remember);
         this.browser.on('srv-update', remember);
         this.browser.start();
-        await new Promise(resolve => setTimeout(resolve, timeoutMs));
-        this.stop();
+        await this.wait(timeoutMs);
+        if (scanId === this.scanId) {
+            this.stop();
+        }
         return [...devices.values()].sort((left, right) => left.name.localeCompare(right.name));
     }
     /**
      *
      */
     stop() {
+        this.scanId += 1;
+        if (this.waitTimer !== undefined) {
+            this.timers.clear(this.waitTimer);
+            this.waitTimer = undefined;
+        }
+        const finishWait = this.finishWait;
+        this.finishWait = undefined;
+        finishWait?.();
         this.browser?.stop();
         this.browser = undefined;
         this.bonjour?.destroy();
         this.bonjour = undefined;
+    }
+    wait(timeoutMs) {
+        return new Promise(resolve => {
+            const finish = () => {
+                this.waitTimer = undefined;
+                this.finishWait = undefined;
+                resolve();
+            };
+            this.finishWait = finish;
+            this.waitTimer = this.timers.set(finish, timeoutMs);
+        });
     }
 }
 exports.ElgatoDiscovery = ElgatoDiscovery;

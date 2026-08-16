@@ -1,4 +1,5 @@
 import Bonjour, { type Service } from 'bonjour-service';
+import { type TimerController } from '../timers';
 import type { DiscoveredElgatoDevice } from './types';
 export interface DiscoveryLogger {
     /**
@@ -17,12 +18,17 @@ export interface DiscoveryLogger {
 export interface ElgatoDiscoveryOptions {
     interface?: string;
     createBonjour?: (onError: (error: Error) => void, networkInterface?: string) => Bonjour;
+    timers?: TimerController;
 }
 export declare class ElgatoDiscovery {
     private readonly logger?;
     private readonly options;
     private browser;
     private bonjour;
+    private readonly timers;
+    private waitTimer;
+    private finishWait;
+    private scanId;
     /**
      *
      */
@@ -35,6 +41,7 @@ export declare class ElgatoDiscovery {
      *
      */
     stop(): void;
+    private wait;
 }
 export declare function serviceToDevice(service: Service): DiscoveredElgatoDevice;
 export declare function discoveredDeviceIdentity(device: DiscoveredElgatoDevice): string;

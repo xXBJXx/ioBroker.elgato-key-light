@@ -1,4 +1,5 @@
 import type { ElgatoCapabilities, ElgatoSnapshot, ElgatoTarget, LightUpdate } from '../elgato/types';
+import type { TimerController } from '../timers';
 export interface ConfiguredDevice extends ElgatoTarget {
     serialNumber?: string;
     displayName?: string;
@@ -32,6 +33,7 @@ export interface DeviceManagerOptions {
     maxBackoffMs: number;
     writeDebounceMs: number;
     clientFactory?: (target: ElgatoTarget) => DeviceClient;
+    timers?: TimerController;
 }
 export interface DeviceClient {
     snapshot(): Promise<ElgatoSnapshot>;

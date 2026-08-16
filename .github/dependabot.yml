@@ -8,8 +8,6 @@ updates:
   - package-ecosystem: 'npm'
     directories:
       - '/'
-      - '/src-admin'
-      - '/src-tab'
     schedule:
       interval: 'cron'
       timezone: 'Europe/Berlin'

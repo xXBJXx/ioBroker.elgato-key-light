@@ -81,4 +81,27 @@ describe('ElgatoDiscovery', () => {
         await discovery.discover(250);
         assert.equal(selectedInterface, '192.168.1.15');
     });
+
+    it('cancels the managed discovery timer when stopped', async () => {
+        const emitter = new EventEmitter();
+        const browser = emitter as unknown as Browser;
+        browser.start = () => undefined;
+        browser.stop = () => undefined;
+        const fakeBonjour = { find: () => browser, destroy: () => undefined } as unknown as Bonjour;
+        let cleared = false;
+        const discovery = new ElgatoDiscovery(undefined, {
+            createBonjour: () => fakeBonjour,
+            timers: {
+                set: () => 'discovery-timer',
+                clear: handle => {
+                    assert.equal(handle, 'discovery-timer');
+                    cleared = true;
+                },
+            },
+        });
+        const pending = discovery.discover(250);
+        discovery.stop();
+        await pending;
+        assert.equal(cleared, true);
+    });
 });

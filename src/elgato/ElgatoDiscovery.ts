@@ -2,6 +2,7 @@ import { isIP } from 'node:net';
 
 import Bonjour, { type Browser, type Service } from 'bonjour-service';
 
+import { systemTimers, type TimerController } from '../timers';
 import type { DiscoveredElgatoDevice } from './types';
 
 export interface DiscoveryLogger {
@@ -22,11 +23,16 @@ export interface DiscoveryLogger {
 export interface ElgatoDiscoveryOptions {
     interface?: string;
     createBonjour?: (onError: (error: Error) => void, networkInterface?: string) => Bonjour;
+    timers?: TimerController;
 }
 
 export class ElgatoDiscovery {
     private browser: Browser | undefined;
     private bonjour: Bonjour | undefined;
+    private readonly timers: TimerController;
+    private waitTimer: unknown;
+    private finishWait: (() => void) | undefined;
+    private scanId = 0;
 
     /**
      *
@@ -34,7 +40,9 @@ export class ElgatoDiscovery {
     public constructor(
         private readonly logger?: DiscoveryLogger,
         private readonly options: ElgatoDiscoveryOptions = {},
-    ) {}
+    ) {
+        this.timers = options.timers ?? systemTimers;
+    }
 
     /**
      *
@@ -44,6 +52,7 @@ export class ElgatoDiscovery {
             throw new RangeError('Discovery timeout must be between 250 and 60000 ms.');
         }
         this.stop();
+        const scanId = ++this.scanId;
         const devices = new Map<string, DiscoveredElgatoDevice>();
         const onError = (error: Error): void => {
             this.logger?.warn(`[ElgatoDiscovery] mDNS error: ${error.message}`);
@@ -68,8 +77,10 @@ export class ElgatoDiscovery {
         this.browser.on('srv-update', remember);
         this.browser.start();
 
-        await new Promise<void>(resolve => setTimeout(resolve, timeoutMs));
-        this.stop();
+        await this.wait(timeoutMs);
+        if (scanId === this.scanId) {
+            this.stop();
+        }
         return [...devices.values()].sort((left, right) => left.name.localeCompare(right.name));
     }
 
@@ -77,10 +88,30 @@ export class ElgatoDiscovery {
      *
      */
     public stop(): void {
+        this.scanId += 1;
+        if (this.waitTimer !== undefined) {
+            this.timers.clear(this.waitTimer);
+            this.waitTimer = undefined;
+        }
+        const finishWait = this.finishWait;
+        this.finishWait = undefined;
+        finishWait?.();
         this.browser?.stop();
         this.browser = undefined;
         this.bonjour?.destroy();
         this.bonjour = undefined;
+    }
+
+    private wait(timeoutMs: number): Promise<void> {
+        return new Promise(resolve => {
+            const finish = (): void => {
+                this.waitTimer = undefined;
+                this.finishWait = undefined;
+                resolve();
+            };
+            this.finishWait = finish;
+            this.waitTimer = this.timers.set(finish, timeoutMs);
+        });
     }
 }
 

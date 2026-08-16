@@ -9,6 +9,7 @@ import type { ElgatoSnapshot, LightUpdate } from './elgato/types';
 import { normalizeConfiguration, reconcileConfigurations } from './ioBroker/configuration';
 import { sanitizeDiagnostics } from './ioBroker/diagnostics';
 import { StateRepository } from './ioBroker/StateRepository';
+import type { TimerController } from './timers';
 
 class ElgatoKeyLight extends utils.Adapter {
     private manager: DeviceManager | undefined;
@@ -20,6 +21,7 @@ class ElgatoKeyLight extends utils.Adapter {
         super({ ...options, name: 'elgato-key-light' });
         this.discovery = new ElgatoDiscovery(this.log, {
             ...(this.config.discoveryInterface ? { interface: this.config.discoveryInterface } : {}),
+            timers: this.timerController(),
         });
         this.states = new StateRepository(this);
         this.on('ready', () => void this.onReady());
@@ -46,6 +48,7 @@ class ElgatoKeyLight extends utils.Adapter {
                 requestTimeoutMs: clamp(this.config.requestTimeoutMs ?? 3_000, 250, 30_000),
                 maxBackoffMs: clamp(this.config.maxBackoffSeconds ?? 300, 5, 3_600) * 1_000,
                 writeDebounceMs: clamp(this.config.writeDebounceMs ?? 200, 0, 2_000),
+                timers: this.timerController(),
             },
         );
         await this.manager.start(configurations);
@@ -211,6 +214,7 @@ class ElgatoKeyLight extends utils.Adapter {
                 requestTimeoutMs: clamp(this.config.requestTimeoutMs ?? 3_000, 250, 30_000),
                 maxBackoffMs: 60_000,
                 writeDebounceMs: 0,
+                timers: this.timerController(),
             },
         );
         try {
@@ -361,6 +365,13 @@ class ElgatoKeyLight extends utils.Adapter {
         } else {
             this.log.error(message);
         }
+    }
+
+    private timerController(): TimerController {
+        return {
+            set: (callback, delayMs) => this.setTimeout(callback, delayMs),
+            clear: handle => this.clearTimeout(handle as ioBroker.Timeout | undefined),
+        };
     }
 
     private async onUnload(callback: () => void): Promise<void> {
